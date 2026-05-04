@@ -23,196 +23,32 @@
           <span class="wordmark">Scrapbook</span>
         </div>
         <h1 class="splash-title">Travel you can hold onto.</h1>
-        <p class="splash-sub">An AR companion for cities. Walk a trail, find a stamp, fill the book.</p>
-        <button class="btn btn-primary btn-block" data-go="onboard-faction">Get started</button>
-        <button class="btn btn-ghost btn-block" data-go="home">I have an account</button>
+        <p class="splash-sub">An AR companion for cities. Walk around, find a stamp, fill the book.</p>
+        <button class="btn btn-primary btn-block" data-go="home">Get started</button>
       </section>
 
-      <!-- ============ ONBOARDING — FACTION ============ -->
-      <section class="screen" data-screen="onboard-faction">
-        <header class="topbar">
-          <button class="icon-btn" data-back aria-label="Back">‹</button>
-          <div class="progress">
-            <span class="dot active"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
-          </div>
-          <span class="topbar-spacer"></span>
-        </header>
-        <main class="screen-body">
-          <h2 class="h-screen">What kind of traveller are you?</h2>
-          <p class="h-sub">Pick up to 2. We'll shape your trails around it.</p>
-          <div class="chip-grid" data-pick-grid data-max="2">
-            <button class="pick-chip" data-val="food">Food‑first</button>
-            <button class="pick-chip" data-val="arch">Architecture</button>
-            <button class="pick-chip" data-val="museum">Museum</button>
-            <button class="pick-chip" data-val="nightlife">Nightlife</button>
-            <button class="pick-chip" data-val="nature">Nature</button>
-            <button class="pick-chip" data-val="history">History</button>
-          </div>
-        </main>
-        <footer class="screen-footer">
-          <button class="btn btn-primary" data-go="onboard-mode">Continue →</button>
-        </footer>
-      </section>
-
-      <!-- ============ ONBOARDING — TRENDY vs LOCAL ============ -->
-      <section class="screen" data-screen="onboard-mode">
-        <header class="topbar">
-          <button class="icon-btn" data-back>‹</button>
-          <div class="progress">
-            <span class="dot"></span>
-            <span class="dot active"></span>
-            <span class="dot"></span>
-          </div>
-          <span class="topbar-spacer"></span>
-        </header>
-        <main class="screen-body">
-          <h2 class="h-screen">Trendy or local?</h2>
-          <p class="h-sub">Same city, two different days. You can switch any time.</p>
-
-          <div class="mode-cards" data-mode-pick>
-            <button class="mode-card" data-mode="trendy">
-              <span class="mode-tag trendy">Trendy</span>
-              <strong>Postcard New York</strong>
-              <small>Viewpoints, landmarks, the famous stuff.</small>
-            </button>
-            <button class="mode-card active" data-mode="local">
-              <span class="mode-tag local">Local</span>
-              <strong>Off the postcard</strong>
-              <small>Hidden gems, neighbourhood pubs, off‑street murals.</small>
-            </button>
-          </div>
-        </main>
-        <footer class="screen-footer">
-          <button class="btn btn-primary" data-go="onboard-city">Continue →</button>
-        </footer>
-      </section>
-
-      <!-- ============ ONBOARDING — CITY ============ -->
-      <section class="screen" data-screen="onboard-city">
-        <header class="topbar">
-          <button class="icon-btn" data-back>‹</button>
-          <div class="progress">
-            <span class="dot"></span>
-            <span class="dot"></span>
-            <span class="dot active"></span>
-          </div>
-          <span class="topbar-spacer"></span>
-        </header>
-        <main class="screen-body">
-          <h2 class="h-screen">Where are you?</h2>
-          <p class="h-sub">We use this to suggest a trail nearby.</p>
-          <div class="city-list">
-            <button class="city-row active" data-city="nyc">
-              <span class="city-mark">NYC</span>
-              <div class="grow">
-                <strong>New York City</strong>
-                <small>Detected · 18 trails</small>
-              </div>
-            </button>
-            <button class="city-row" data-city="paris">
-              <span class="city-mark">PAR</span>
-              <div class="grow">
-                <strong>Paris</strong>
-                <small>12 trails</small>
-              </div>
-            </button>
-            <button class="city-row" data-city="tokyo">
-              <span class="city-mark">TYO</span>
-              <div class="grow">
-                <strong>Tokyo</strong>
-                <small>22 trails</small>
-              </div>
-            </button>
-            <button class="city-row" data-city="rome">
-              <span class="city-mark">ROM</span>
-              <div class="grow">
-                <strong>Rome</strong>
-                <small>9 trails</small>
-              </div>
-            </button>
-          </div>
-        </main>
-        <footer class="screen-footer">
-          <button class="btn btn-primary" data-go="home">Find me a trail →</button>
-        </footer>
-      </section>
-
-      <!-- ============ HOME ============ -->
+      <!-- ============ HOME — LOCATION CARD ============ -->
       <section class="screen has-tabs" data-screen="home">
-        <header class="topbar topbar-home">
-          <div>
-            <small class="topbar-eyebrow">Today in</small>
-            <strong class="topbar-city">New York City</strong>
-          </div>
-          <div class="mode-toggle" data-mode-toggle>
-            <button class="mode-toggle-opt" data-mode="trendy">Trendy</button>
-            <button class="mode-toggle-opt active" data-mode="local">Local</button>
-          </div>
+        <header class="topbar topbar-location">
+          <small class="topbar-eyebrow">You're at</small>
+          <strong class="topbar-city">Empire State Building</strong>
         </header>
-        <main class="screen-body">
-          <article class="trail-hero">
-            <div class="trail-hero-head">
-              <span class="chip chip-green">Local trail</span>
-              <small>Picked for: nature · history</small>
-            </div>
-            <h2 class="trail-hero-title">Midtown, slowly</h2>
-            <p class="trail-hero-sub">5 stops · ~3.6 mi · 2 hrs at your pace</p>
-            <div class="trail-stops">
-              <div class="stop done">
-                <span class="stop-dot"></span>
-                <div><strong>Bryant Park reading room</strong><small>Collected · 11:24 AM</small></div>
-              </div>
-              <div class="stop active">
-                <span class="stop-dot"></span>
-                <div><strong>Empire State Building</strong><small>You're here · ready to find</small></div>
-              </div>
-              <div class="stop">
-                <span class="stop-dot"></span>
-                <div><strong>Lexington Candy Shop</strong><small>4 blocks east</small></div>
-              </div>
-              <div class="stop">
-                <span class="stop-dot"></span>
-                <div><strong>Kinokuniya bookstore</strong><small>0.4 mi north</small></div>
-              </div>
-              <div class="stop">
-                <span class="stop-dot"></span>
-                <div><strong>230 Fifth rooftop</strong><small>Final stop</small></div>
+        <main class="screen-body location-body">
+          <div class="location-card">
+            <div class="location-stamp-preview">
+              <div class="stamp-disc">
+                <span class="stamp-name">EMPIRE</span>
+                <span class="stamp-sub">NYC · MAY</span>
               </div>
             </div>
-            <button class="btn btn-primary btn-block" data-go="ar-search">Find the next stamp</button>
-          </article>
-
-          <section class="section">
-            <h3 class="h-section">Other trails nearby</h3>
-            <div class="trail-mini-list">
-              <article class="trail-mini">
-                <span class="chip chip-orange small">Trendy</span>
-                <strong>NYC, the postcard</strong>
-                <small>5 stops · 4.2 mi</small>
-              </article>
-              <article class="trail-mini">
-                <span class="chip chip-yellow small">Food</span>
-                <strong>Bagel run, west village</strong>
-                <small>4 stops · 1.8 mi</small>
-              </article>
-              <article class="trail-mini">
-                <span class="chip chip-blue small">Arch</span>
-                <strong>Brutalism in Midtown</strong>
-                <small>6 stops · 2.4 mi</small>
-              </article>
-            </div>
-          </section>
+            <p class="location-desc">Your stamp is hidden nearby. Scan to find it.</p>
+            <button class="btn btn-primary btn-block" data-go="ar-scan">Find your stamp →</button>
+          </div>
         </main>
         <nav class="tabbar">
-          <button class="tab-btn" data-go="home">
+          <button class="tab-btn active" data-go="home">
             <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-            <small>Map</small>
-          </button>
-          <button class="tab-btn active">
-            <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14"/></svg>
-            <small>Trails</small>
+            <small>Explore</small>
           </button>
           <button class="tab-btn" data-go="book">
             <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
@@ -225,67 +61,48 @@
         </nav>
       </section>
 
-      <!-- ============ AR — SEARCHING ============ -->
-      <section class="screen screen-camera" data-screen="ar-search" data-needs-camera>
-        <video class="ar-feed" autoplay muted playsinline></video>
-        <div class="ar-scrim"></div>
-        <div class="ar-perm" hidden>
-          <p class="ar-perm-title">Camera needed</p>
-          <p class="ar-perm-sub">Allow camera access to find stamps in the world.</p>
-          <button class="btn btn-pill primary" data-cam-retry>Enable camera</button>
-        </div>
-        <header class="topbar topbar-overlay">
-          <button class="icon-btn light" data-back>✕</button>
-          <span class="ar-label">Empire State Building</span>
-          <span class="topbar-spacer"></span>
-        </header>
-        <div class="ar-stage">
-          <div class="ar-viewfinder">
-            <div class="vf-corner tl"></div>
-            <div class="vf-corner tr"></div>
-            <div class="vf-corner bl"></div>
-            <div class="vf-corner br"></div>
-            <div class="ar-hint">Move your camera around to find the stamp</div>
-          </div>
-          <div class="radar"><span></span></div>
-        </div>
-        <footer class="ar-footer">
-          <button class="btn btn-pill" data-go="ar-detected">Simulate detection</button>
-        </footer>
-      </section>
+      <!-- ============ AR SCAN ============ -->
+      <section class="screen screen-ar-scan" data-screen="ar-scan">
+        <!-- MindAR mounts its canvas + video here -->
+        <div id="ar-scan-container"></div>
 
-      <!-- ============ AR — DETECTED, ALIGN ============ -->
-      <section class="screen screen-camera" data-screen="ar-detected" data-needs-camera>
-        <video class="ar-feed" autoplay muted playsinline></video>
-        <div class="ar-scrim soft"></div>
-        <div class="ar-perm" hidden>
-          <p class="ar-perm-title">Camera needed</p>
-          <p class="ar-perm-sub">Allow camera access to find stamps in the world.</p>
-          <button class="btn btn-pill primary" data-cam-retry>Enable camera</button>
-        </div>
-        <header class="topbar topbar-overlay">
-          <button class="icon-btn light" data-back>✕</button>
-          <span class="ar-label detected">Empire State detected</span>
-          <span class="topbar-spacer"></span>
-        </header>
-        <div class="ar-stage">
-          <div class="ar-viewfinder">
-            <div class="vf-corner tl green"></div>
-            <div class="vf-corner tr green"></div>
-            <div class="vf-corner bl green"></div>
-            <div class="vf-corner br green"></div>
-            <div class="ar-stamp">
-              <div class="stamp-disc">
-                <span class="stamp-name">EMPIRE</span>
-                <span class="stamp-sub">NYC · MAY</span>
-              </div>
+        <!-- UI overlay (sits above MindAR canvas) -->
+        <div class="ar-ui-overlay">
+          <header class="topbar topbar-overlay">
+            <button class="icon-btn light" data-back aria-label="Close">✕</button>
+            <span class="ar-label">Empire State Building</span>
+            <span class="topbar-spacer"></span>
+          </header>
+
+          <!-- Phase 1: find the building -->
+          <div id="ar-phase-1" class="ar-phase">
+            <div class="ar-viewfinder">
+              <div class="vf-corner tl"></div>
+              <div class="vf-corner tr"></div>
+              <div class="vf-corner bl"></div>
+              <div class="vf-corner br"></div>
             </div>
-            <div class="ar-hint align">Align the outline with the building to unlock</div>
+            <p class="ar-hint">Point your camera at the Empire State Building</p>
+            <div id="ar-camera-error" class="ar-camera-error" hidden>
+              <p class="ar-camera-error-title">Camera did not start</p>
+              <p class="ar-camera-error-sub">Use Safari or Chrome over HTTPS (or localhost). Tap to try again.</p>
+              <button type="button" class="btn btn-pill primary" data-ar-cam-retry>Enable camera</button>
+            </div>
+            <div class="radar"><span></span></div>
+          </div>
+
+          <!-- Phase 2: hunt the stamp -->
+          <div id="ar-phase-2" class="ar-phase" hidden>
+            <p class="ar-hunt-hint">Move around — the stamp is hiding near this building. Follow the arrow.</p>
+            <div class="compass-strip">
+              <span class="compass-label">Stamp direction</span>
+              <span class="compass-arrow">↑</span>
+            </div>
           </div>
         </div>
-        <footer class="ar-footer">
-          <button class="btn btn-pill primary" data-go="ar-fact">+ Collect stamp</button>
-        </footer>
+
+        <!-- Tap prompt: shown when stamp is centred in view -->
+        <div id="tap-to-collect" hidden>Tap to collect the stamp ✦</div>
       </section>
 
       <!-- ============ STAMP — FACT + TASK ============ -->
@@ -332,61 +149,12 @@
               <span class="stamp-sub">NYC · MAY</span>
             </div>
           </div>
-          <h2 class="collected-title">Stamp added</h2>
-          <p class="collected-sub">Midtown, slowly · stop 2 of 5</p>
+          <h2 class="collected-title">Stamp collected!</h2>
+          <p class="collected-sub">Added to your New York City book</p>
         </main>
         <footer class="screen-footer split">
-          <button class="btn btn-ghost" data-go="book">See the book</button>
-          <button class="btn btn-primary" data-go="nearby">What's around →</button>
-        </footer>
-      </section>
-
-      <!-- ============ NEARBY ============ -->
-      <section class="screen" data-screen="nearby">
-        <header class="topbar">
-          <button class="icon-btn" data-back>‹</button>
-          <span class="topbar-title">Around Empire State</span>
-          <span class="topbar-spacer"></span>
-        </header>
-        <main class="screen-body">
-          <p class="h-sub no-top">Quiet picks within a 12‑min walk. Add any to your trail.</p>
-          <ul class="nearby-list">
-            <li>
-              <span class="nearby-dot dot-green"></span>
-              <div class="nearby-meta">
-                <strong>Kinokuniya</strong>
-                <small>Japanese bookstore · 6 min walk</small>
-              </div>
-              <button class="add-btn">+</button>
-            </li>
-            <li>
-              <span class="nearby-dot dot-orange"></span>
-              <div class="nearby-meta">
-                <strong>230 Fifth rooftop</strong>
-                <small>City view · 9 min walk</small>
-              </div>
-              <button class="add-btn">+</button>
-            </li>
-            <li>
-              <span class="nearby-dot dot-yellow"></span>
-              <div class="nearby-meta">
-                <strong>Lexington Candy Shop</strong>
-                <small>Old soda fountain · 11 min walk</small>
-              </div>
-              <button class="add-btn added">✓</button>
-            </li>
-            <li>
-              <span class="nearby-dot dot-blue"></span>
-              <div class="nearby-meta">
-                <strong>Morgan Library reading room</strong>
-                <small>Quiet · 12 min walk</small>
-              </div>
-              <button class="add-btn">+</button>
-            </li>
-          </ul>
-        </main>
-        <footer class="screen-footer">
-          <button class="btn btn-primary btn-block" data-go="home">Back to trail</button>
+          <button class="btn btn-ghost" data-go="home">Keep exploring</button>
+          <button class="btn btn-primary" data-go="book">See the book →</button>
         </footer>
       </section>
 
@@ -578,11 +346,7 @@
         <nav class="tabbar">
           <button class="tab-btn" data-go="home">
             <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-            <small>Map</small>
-          </button>
-          <button class="tab-btn" data-go="home">
-            <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14"/></svg>
-            <small>Trails</small>
+            <small>Explore</small>
           </button>
           <button class="tab-btn active">
             <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
@@ -629,11 +393,7 @@
         <nav class="tabbar">
           <button class="tab-btn" data-go="home">
             <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-            <small>Map</small>
-          </button>
-          <button class="tab-btn" data-go="home">
-            <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14"/></svg>
-            <small>Trails</small>
+            <small>Explore</small>
           </button>
           <button class="tab-btn" data-go="book">
             <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
@@ -649,6 +409,10 @@
     </div>
   </div>
 
+  <!-- A-Frame core: required before MindAR (mindar-image-aframe only registers on global AFRAME) -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <!-- MindAR image + A-Frame integration -->
+  <script src="mindar-image-aframe.prod.js"></script>
   <script src="script.js"></script>
 </body>
 </html>
