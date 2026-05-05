@@ -2,15 +2,7 @@
   "name": "scrapbook",
   "version": "1.0.0",
   "description": "",
-  "main": "mindar-image-three.prod.js",
-  "scripts": {
-    "dev": "vite",
-    "dev:https": "vite --config vite.https.config.mjs",
-    "dev:share": "concurrently -k -n vite,tunnel -c blue,magenta \"vite\" \"node scripts/run-tunnel.cjs --wait-for-vite\"",
-    "tunnel": "node scripts/run-tunnel.cjs",
-    "preview": "vite preview",
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
+  "scripts": {},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ritikarameshh/Scrapbook.git"
@@ -22,15 +14,5 @@
   "bugs": {
     "url": "https://github.com/ritikarameshh/Scrapbook/issues"
   },
-  "homepage": "https://github.com/ritikarameshh/Scrapbook#readme",
-  "dependencies": {
-    "esbuild": "^0.28.0",
-    "mind-ar": "^1.2.5",
-    "three": "^0.143.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-basic-ssl": "^1.2.0",
-    "concurrently": "^9.2.1",
-    "vite": "^6.0.0"
-  }
+  "homepage": "https://github.com/ritikarameshh/Scrapbook#readme"
 }

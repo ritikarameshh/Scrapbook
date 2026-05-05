@@ -1,0 +1,4 @@
+# Static site: HTML + JS assets live at the repo root (not in dist/).
+# If Netlify publishes an empty/wrong folder, script.js 404s and navigation never attaches.
+[build]
+  publish = "."
