@@ -104,8 +104,37 @@ document.addEventListener('click', (e) => {
 });
 
 // ============ AR — MindAR A-Frame image tracking ============
-let arPhase   = 0; // 0 = idle | 1 = scanning | 2 = hunting
-let arSceneEl = null;
+let arPhase          = 0; // 0 = idle | 1 = scanning | 2 = hunting
+let arSceneEl        = null;
+let gemTargetVisible = false; // set by targetFound/targetLost events in MindAR validator
+
+// Hidden-gem demo: when true, Phase 1 uses outline-alignment instead of plain
+// MindAR image detection. See docs/landmark-data-model.md for the long-term
+// per-landmark data shape this stand-in flag is meant to grow into.
+const HIDDEN_GEM_DEMO        = true;
+const ALIGNMENT_THRESHOLD    = 0.05;   // 5% — gates Phase 2
+const ALIGNMENT_SUSTAIN_MS   = 1000;
+const ALIGNMENT_TICK_MS      = 100;    // visual validator runs at 10 Hz
+const VISUAL_GRID_W          = 192;    // downsampled Sobel grid; cheap on phones
+const VISUAL_GRID_H          = 256;
+const VISUAL_EDGE_THRESHOLD  = 60;     // 0..255
+
+// Resolves once on URL load — safe to read on every startAR.
+function getValidatorMode() {
+  const p = new URLSearchParams(window.location.search).get('validator');
+  return p === 'mindar' ? 'mindar' : 'visual';
+}
+function getOutlineMode() {
+  const p = new URLSearchParams(window.location.search).get('outline');
+  return p === 'auto' ? 'auto' : 'svg';
+}
+function getOutlineSrc() {
+  // Default outline asset paths — update these when a real HiddenGem.png lands.
+  // The .auto.png is produced by `npm run gen-outlines`.
+  return getOutlineMode() === 'auto'
+    ? 'Assets/HiddenGem.auto.png'
+    : 'Assets/hidden-gem-outline.svg';
+}
 
 // World-locked stamp: billboard each frame so the disc faces the phone (portrait-friendly).
 if (typeof AFRAME !== 'undefined' && !AFRAME.components['stamp-billboard']) {
@@ -195,7 +224,8 @@ function startAR() {
   requestAnimationFrame(() => {
     const active = document.querySelector('.screen.active');
     if (!active || active.dataset.screen !== 'ar-scan') return;
-    mountARSceneInto(container);
+    if (HIDDEN_GEM_DEMO) mountOutlineSceneInto(container);
+    else                 mountARSceneInto(container);
   });
 }
 
@@ -266,21 +296,317 @@ function mountARSceneInto(container) {
   }
 }
 
+// ---- Hidden-gem outline-alignment Phase 1 ----------------------------------
+
+let alignmentTickerId      = null;
+let alignmentSustainStart  = 0;
+let alignmentLocked        = false;
+let outlineMaskCanvas      = null;   // pre-binarized outline edge mask, used by visual validator
+let visualSampleCanvas     = null;   // reused per tick to avoid GC churn
+
+function mountOutlineSceneInto(container) {
+  const validator = getValidatorMode();
+  const outlineSrc = getOutlineSrc();
+
+  prepareOutlineUI(outlineSrc, validator);
+
+  // Mount the same MindAR scene template — it handles camera + error UX. For the
+  // visual validator we just ignore the targetFound events.
+  container.innerHTML = `
+    <a-scene id="ar-scene" embedded
+      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; uiLoading: no; uiError: no;"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+      renderer="alpha: true"
+      style="position:absolute;top:0;left:0;width:100%;height:100%;">
+      <a-assets></a-assets>
+      <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <a-entity id="gem-anchor" mindar-image-target="targetIndex: 1"></a-entity>
+      <a-entity id="stamp-entity" visible="false" stamp-billboard>
+        <a-circle radius="0.34" position="0 0 0"
+          material="shader: flat; color: #E26E5F; side: double"></a-circle>
+        <a-ring radius-inner="0.2" radius-outer="0.32" position="0 0 0.003"
+          material="shader: flat; color: #F4F0E8; side: double; opacity: 0.95; transparent: true"></a-ring>
+      </a-entity>
+    </a-scene>`;
+
+  arSceneEl = document.getElementById('ar-scene');
+  if (!arSceneEl) return;
+
+  arSceneEl.addEventListener('renderstart', () => {
+    hideARCameraError();
+    if (arSceneEl?.renderer) arSceneEl.renderer.setClearColor(0x000000, 0);
+    // Wire targetFound/targetLost for the MindAR validator (HiddenGem at index 1).
+    gemTargetVisible = false;
+    const gemAnchor = document.getElementById('gem-anchor');
+    if (gemAnchor) {
+      gemAnchor.addEventListener('targetFound', () => { gemTargetVisible = true; });
+      gemAnchor.addEventListener('targetLost',  () => { gemTargetVisible = false; });
+    }
+    // Camera is live — kick off the chosen alignment loop.
+    if (validator === 'visual') startVisualAlignment();
+    else                        startMindARAlignment();
+  }, { once: true });
+
+  arSceneEl.addEventListener('arError', (e) => {
+    const code = e.detail?.error ?? '';
+    let sub = 'Tap “Enable camera”, choose Allow, and use Safari/Chrome.';
+    if (!window.isSecureContext) {
+      sub = 'Serve the app over HTTPS or localhost.';
+    } else if (code === 'VIDEO_FAIL') {
+      sub = 'Try “Enable camera” again, open in Safari, or use a real device.';
+    }
+    showARCameraError(sub);
+  });
+
+  setARPhaseUI(1);
+}
+
+function prepareOutlineUI(outlineSrc, validator) {
+  alignmentLocked = false;
+  alignmentSustainStart = 0;
+
+  const stage   = document.querySelector('#ar-phase-outline .outline-stage');
+  const imgEl   = document.getElementById('outline-img');
+  const modeEl  = document.getElementById('align-mode');
+  const scoreEl = document.getElementById('align-score');
+  const hintEl  = document.getElementById('outline-hint');
+
+  if (stage) {
+    stage.dataset.state = 'idle';
+    stage.style.setProperty('--sustain', '0');
+  }
+  if (imgEl)   imgEl.style.setProperty('--outline-src', `url("${outlineSrc}")`);
+  if (modeEl)  modeEl.textContent = validator;
+  if (scoreEl) scoreEl.textContent = '—';
+  if (hintEl)  hintEl.textContent = 'Match the outline to what you see';
+
+  // Pre-build the outline edge mask for the visual validator (one-time per mount).
+  if (validator === 'visual') buildOutlineMask(outlineSrc);
+}
+
+// Apply a single alignment score (0..1, where 0 = perfect) to the UI and
+// fire onAlignmentLocked() once it's been below threshold for the sustain window.
+function applyAlignmentScore(error) {
+  if (alignmentLocked || arPhase !== 1) return;
+
+  const stage   = document.querySelector('#ar-phase-outline .outline-stage');
+  const scoreEl = document.getElementById('align-score');
+
+  let state;
+  if (error >= 0.30)                        state = 'far';
+  else if (error >= ALIGNMENT_THRESHOLD)    state = 'near';
+  else                                       state = 'aligned';
+
+  let sustain = 0;
+  const now = performance.now();
+  if (error < ALIGNMENT_THRESHOLD) {
+    if (alignmentSustainStart === 0) alignmentSustainStart = now;
+    sustain = Math.min(1, (now - alignmentSustainStart) / ALIGNMENT_SUSTAIN_MS);
+  } else {
+    alignmentSustainStart = 0;
+  }
+
+  if (stage) {
+    stage.dataset.state = state;
+    stage.style.setProperty('--sustain', String(sustain));
+  }
+  if (scoreEl) scoreEl.textContent = `${Math.round(error * 100)}%`;
+
+  if (sustain >= 1) onAlignmentLocked();
+}
+
+function onAlignmentLocked() {
+  if (alignmentLocked) return;
+  alignmentLocked = true;
+
+  stopAlignmentLoops();
+
+  const stage = document.querySelector('#ar-phase-outline .outline-stage');
+  if (stage) stage.dataset.state = 'locked';
+
+  try { navigator.vibrate?.(80); } catch (_) {}
+
+  const validator = getValidatorMode();
+  const anchorEl = (validator === 'mindar') ? document.getElementById('gem-anchor') : null;
+
+  // Brief lock-in beat, then hand off to the existing Phase 2 hunt.
+  setTimeout(() => transitionToPhase2(anchorEl), 420);
+}
+
+function stopAlignmentLoops() {
+  if (alignmentTickerId !== null) {
+    clearInterval(alignmentTickerId);
+    alignmentTickerId = null;
+  }
+}
+
+window.__forceAlign = function () {
+  applyAlignmentScore(0);
+};
+
+// --- Validator A: visual edge matching ---------------------------------------
+
+function startVisualAlignment() {
+  if (alignmentTickerId !== null) stopAlignmentLoops();
+
+  const video = arSceneEl?.querySelector('video') || document.querySelector('#ar-scan-container video');
+  if (!video) return;
+
+  if (!visualSampleCanvas) {
+    visualSampleCanvas = document.createElement('canvas');
+    visualSampleCanvas.width  = VISUAL_GRID_W;
+    visualSampleCanvas.height = VISUAL_GRID_H;
+  }
+
+  alignmentTickerId = setInterval(() => {
+    if (alignmentLocked || arPhase !== 1) return;
+    const v = arSceneEl?.querySelector('video') || video;
+    if (!v || v.readyState < 2 || !outlineMaskCanvas) return;
+
+    const targetRect = readOutlineTargetRect();
+    if (!targetRect) return;
+
+    const ctx = visualSampleCanvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return;
+
+    // Draw the camera frame, cropped to the outline's screen-space rectangle.
+    const vw = v.videoWidth, vh = v.videoHeight;
+    if (!vw || !vh) return;
+    const screenW = window.innerWidth, screenH = window.innerHeight;
+    const scale = Math.max(screenW / vw, screenH / vh);     // matches CSS object-fit: cover
+    const drawW = vw * scale, drawH = vh * scale;
+    const dx = (screenW - drawW) / 2, dy = (screenH - drawH) / 2;
+    // Source rect in video space corresponding to the outline's screen rect:
+    const srcX = (targetRect.left   - dx) / scale;
+    const srcY = (targetRect.top    - dy) / scale;
+    const srcW = targetRect.width  / scale;
+    const srcH = targetRect.height / scale;
+
+    ctx.drawImage(v, srcX, srcY, srcW, srcH, 0, 0, VISUAL_GRID_W, VISUAL_GRID_H);
+    const camMask = sobelEdgeMask(ctx.getImageData(0, 0, VISUAL_GRID_W, VISUAL_GRID_H));
+
+    const score = iouScore(camMask, outlineMaskCanvas.data);
+    applyAlignmentScore(1 - score);
+  }, ALIGNMENT_TICK_MS);
+}
+
+function readOutlineTargetRect() {
+  const el = document.getElementById('outline-target');
+  if (!el) return null;
+  return el.getBoundingClientRect();
+}
+
+function buildOutlineMask(src) {
+  outlineMaskCanvas = null;
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.onload = () => {
+    const c = document.createElement('canvas');
+    c.width  = VISUAL_GRID_W;
+    c.height = VISUAL_GRID_H;
+    const cx = c.getContext('2d');
+    if (!cx) return;
+    cx.clearRect(0, 0, c.width, c.height);
+    // Letterbox the outline into the cell preserving aspect, matching its on-screen contain.
+    const ar = img.naturalWidth / img.naturalHeight;
+    const cellAr = VISUAL_GRID_W / VISUAL_GRID_H;
+    let dw = VISUAL_GRID_W, dh = VISUAL_GRID_H, dx = 0, dy = 0;
+    if (ar > cellAr) { dh = VISUAL_GRID_W / ar; dy = (VISUAL_GRID_H - dh) / 2; }
+    else             { dw = VISUAL_GRID_H * ar; dx = (VISUAL_GRID_W - dw) / 2; }
+    cx.drawImage(img, dx, dy, dw, dh);
+
+    const id = cx.getImageData(0, 0, c.width, c.height);
+    const mask = new Uint8Array(c.width * c.height);
+    for (let i = 0; i < mask.length; i++) {
+      // Mask = pixels with non-trivial alpha OR strong dark luminance (handles SVGs that paint with color).
+      const a = id.data[i * 4 + 3];
+      const lum = 0.299 * id.data[i * 4] + 0.587 * id.data[i * 4 + 1] + 0.114 * id.data[i * 4 + 2];
+      mask[i] = (a > 80 && lum < 200) || a > 200 ? 1 : 0;
+    }
+    outlineMaskCanvas = { data: mask, width: c.width, height: c.height };
+  };
+  img.onerror = () => {
+    console.warn('[outline] failed to load mask source:', src);
+    outlineMaskCanvas = null;
+  };
+  img.src = src;
+}
+
+function sobelEdgeMask(imageData) {
+  const w = imageData.width, h = imageData.height;
+  const src = imageData.data;
+  const gray = new Uint8Array(w * h);
+  for (let i = 0, j = 0; i < src.length; i += 4, j++) {
+    gray[j] = (0.299 * src[i] + 0.587 * src[i + 1] + 0.114 * src[i + 2]) | 0;
+  }
+  const out = new Uint8Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const gx =
+        -gray[i - w - 1] - 2 * gray[i - 1] - gray[i + w - 1] +
+         gray[i - w + 1] + 2 * gray[i + 1] + gray[i + w + 1];
+      const gy =
+        -gray[i - w - 1] - 2 * gray[i - w] - gray[i - w + 1] +
+         gray[i + w - 1] + 2 * gray[i + w] + gray[i + w + 1];
+      const m = Math.abs(gx) + Math.abs(gy);   // L1 — close to L2 but no sqrt
+      out[i] = m > VISUAL_EDGE_THRESHOLD ? 1 : 0;
+    }
+  }
+  return out;
+}
+
+function iouScore(a, b) {
+  let inter = 0, union = 0;
+  const n = Math.min(a.length, b.length);
+  for (let i = 0; i < n; i++) {
+    const ai = a[i], bi = b[i];
+    if (ai && bi) inter++;
+    if (ai || bi) union++;
+  }
+  return union === 0 ? 0 : inter / union;
+}
+
+// --- Validator B: MindAR event-based detection -------------------------------
+
+function startMindARAlignment() {
+  if (alignmentTickerId !== null) stopAlignmentLoops();
+
+  // gemTargetVisible is set by targetFound/targetLost events wired in mountOutlineSceneInto.
+  // Detection = aligned; no position/scale math needed.
+  alignmentTickerId = setInterval(() => {
+    if (alignmentLocked || arPhase !== 1) return;
+    applyAlignmentScore(gemTargetVisible ? 0 : 1);
+  }, ALIGNMENT_TICK_MS);
+}
+
 function transitionToPhase2(anchorEl) {
   const stampEl = document.getElementById('stamp-entity');
-  if (!stampEl || !anchorEl) return;
-
-  // Scavenger hunt: stamp is fixed to the tracked image; user moves the phone to find it.
-  anchorEl.appendChild(stampEl);
+  if (!stampEl) return;
 
   const angle = Math.random() * Math.PI * 2;
   const radius = 0.48 + Math.random() * 0.42;
   const yLift = 0.18 + Math.random() * 0.28;
-  stampEl.setAttribute('position', {
-    x: Math.cos(angle) * radius,
-    y: yLift,
-    z: Math.sin(angle) * radius,
-  });
+
+  if (anchorEl) {
+    // Scavenger hunt anchored to the tracked image: stamp is in image-local space.
+    anchorEl.appendChild(stampEl);
+    stampEl.setAttribute('position', {
+      x: Math.cos(angle) * radius,
+      y: yLift,
+      z: Math.sin(angle) * radius,
+    });
+  } else {
+    // Visual-validator path (no MindAR anchor): stamp lives in world space, ahead of camera.
+    stampEl.setAttribute('position', {
+      x: Math.cos(angle) * radius,
+      y: yLift,
+      z: -1.4 + Math.sin(angle) * radius * 0.6,
+    });
+  }
+
   stampEl.setAttribute('rotation', { x: 0, y: 0, z: 0 });
   stampEl.setAttribute('visible', true);
   stampEl.object3D.visible = true;
@@ -290,12 +616,15 @@ function transitionToPhase2(anchorEl) {
 }
 
 function setARPhaseUI(phase) {
-  const p1      = document.getElementById('ar-phase-1');
-  const p2      = document.getElementById('ar-phase-2');
-  const tapHint = document.getElementById('tap-to-collect');
-  if (p1)      p1.hidden = (phase !== 1);
-  if (p2)      p2.hidden = (phase !== 2);
-  if (tapHint) tapHint.hidden = true;
+  const p1       = document.getElementById('ar-phase-1');
+  const p1Out    = document.getElementById('ar-phase-outline');
+  const p2       = document.getElementById('ar-phase-2');
+  const tapHint  = document.getElementById('tap-to-collect');
+  const usingOutline = HIDDEN_GEM_DEMO;
+  if (p1)       p1.hidden    = (phase !== 1) || usingOutline;
+  if (p1Out)    p1Out.hidden = (phase !== 1) || !usingOutline;
+  if (p2)       p2.hidden    = (phase !== 2);
+  if (tapHint)  tapHint.hidden = true;
 }
 
 function showARError(msg) {
@@ -305,6 +634,10 @@ function showARError(msg) {
 
 function stopAR() {
   arPhase = 0;
+  stopAlignmentLoops();
+  alignmentLocked = false;
+  alignmentSustainStart = 0;
+  gemTargetVisible = false;
 
   if (arSceneEl) {
     const s = arSceneEl;

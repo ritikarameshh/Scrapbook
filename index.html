@@ -91,6 +91,25 @@
             <div class="radar"><span></span></div>
           </div>
 
+          <!-- Phase 1 (alternate): align an outline of a hidden-gem spot -->
+          <div id="ar-phase-outline" class="ar-phase" hidden>
+            <div class="outline-stage" data-state="idle">
+              <div class="outline-target" id="outline-target">
+                <div class="outline-img" id="outline-img" role="img" aria-label="Outline of the hidden gem"></div>
+                <svg class="sustain-ring" viewBox="0 0 100 100" aria-hidden="true">
+                  <circle class="sustain-ring-track" cx="50" cy="50" r="46"></circle>
+                  <circle class="sustain-ring-fill"  cx="50" cy="50" r="46"></circle>
+                </svg>
+                <div class="lockin-check" aria-hidden="true">✓</div>
+              </div>
+            </div>
+            <p class="ar-hint outline-hint" id="outline-hint">Match the outline to what you see</p>
+            <div class="dev-chip" id="align-chip">
+              <span class="dev-chip-mode" id="align-mode">visual</span>
+              <span class="dev-chip-score" id="align-score">—</span>
+            </div>
+          </div>
+
           <!-- Phase 2: hunt the stamp -->
           <div id="ar-phase-2" class="ar-phase" hidden>
             <p class="ar-hunt-hint">Move around — the stamp is hiding near this building. Follow the arrow.</p>
