@@ -107,71 +107,23 @@ document.addEventListener('click', (e) => {
 let arPhase   = 0; // 0 = idle | 1 = scanning | 2 = hunting
 let arSceneEl = null;
 
-// Hidden-gem demo: when true, Phase 1 uses outline-alignment instead of plain
-// MindAR image detection. See docs/landmark-data-model.md for the long-term
-// per-landmark data shape this stand-in flag is meant to grow into.
-const HIDDEN_GEM_DEMO        = true;
-const ALIGNMENT_THRESHOLD    = 0.50;   // tolerant IoU is more generous; 0.50 ≈ "roughly aligned"
+const ALIGNMENT_THRESHOLD    = 0.60;   // tolerant IoU is more generous; 0.50 ≈ "roughly aligned"
 const ALIGNMENT_SUSTAIN_MS   = 1000;
 const ALIGNMENT_TICK_MS      = 100;    // visual validator runs at 10 Hz
 const VISUAL_GRID_W          = 192;    // downsampled Sobel grid; cheap on phones
 const VISUAL_GRID_H          = 256;
 const VISUAL_EDGE_THRESHOLD  = 60;     // 0..255
-const VISUAL_TOLERANCE_PX    = 4;      // tolerance-aware IoU: edges within N px count as a match
+const VISUAL_TOLERANCE_PX    = 3;      // tolerance-aware IoU: edges within N px count as a match
 
-// In-app toggles — switched via the dev-controls strip shown during outline Phase 1.
-// MindAR validator: SVG outline → ESB (targetIndex 0); AUTO outline → HiddenGem (targetIndex 1).
-// Both use targets-combined.mind (compile at https://hiukim.github.io/mind-ar-js-doc/tools/compile
-// by uploading EmpireStateBuilding.jpeg first, then HiddenGem.png).
-let validatorMode = 'visual'; // 'visual' | 'mindar'
-let outlineMode   = 'auto';   // 'svg'    | 'auto'  — visual validator matches HiddenGem.auto.png against HiddenGem.png in camera
-
-function getOutlineSrc() {
-  return outlineMode === 'auto'
-    ? 'Assets/HiddenGem.auto.png'
-    : 'Assets/hidden-gem-outline.svg';
-}
-
-function setupDevToggles() {
-  const vBtn = document.getElementById('toggle-validator');
-  const oBtn = document.getElementById('toggle-outline');
-  if (!vBtn || !oBtn) return;
-
-  function syncButtons() {
-    vBtn.textContent = validatorMode.toUpperCase();
-    vBtn.dataset.active = validatorMode;
-    oBtn.textContent = outlineMode.toUpperCase();
-    oBtn.dataset.active = outlineMode;
-  }
-
-  vBtn.addEventListener('click', () => {
-    validatorMode = validatorMode === 'visual' ? 'mindar' : 'visual';
-    syncButtons();
-    if (arPhase === 1 && HIDDEN_GEM_DEMO) restartAlignmentLoop();
-  });
-
-  oBtn.addEventListener('click', () => {
-    outlineMode = outlineMode === 'svg' ? 'auto' : 'svg';
-    syncButtons();
-    const src = getOutlineSrc();
-    const imgEl = document.getElementById('outline-img');
-    if (imgEl) imgEl.style.setProperty('--outline-src', `url("${src}")`);
-    if (validatorMode === 'visual') buildOutlineMask(src);
-    if (arPhase === 1 && HIDDEN_GEM_DEMO) restartAlignmentLoop();
-  });
-
-  syncButtons();
-}
+// Single outline source — visual edge-match validator only.
+const OUTLINE_SRC = 'Assets/HiddenGem.auto.png';
 
 function restartAlignmentLoop() {
   stopAlignmentLoops();
   alignmentSustainStart = 0;
-  esbTargetVisible = false;
-  gemTargetVisible = false;
   const stage = document.querySelector('#ar-phase-outline .outline-stage');
   if (stage) { stage.dataset.state = 'idle'; stage.style.setProperty('--sustain', '0'); }
-  if (validatorMode === 'visual') startVisualAlignment();
-  else                            startMindARAlignment();
+  startVisualAlignment();
 }
 
 // World-locked stamp: billboard each frame so the disc faces the phone (portrait-friendly).
@@ -234,11 +186,11 @@ function hideARCameraError() {
   if (box) box.hidden = true;
 }
 
-function resetARPhase1Hint() {
-  const hint = document.querySelector('#ar-phase-1 .ar-hint');
+function resetOutlineHint() {
+  const hint = document.querySelector('#ar-phase-outline .ar-hint');
   if (hint) {
     hint.classList.remove('ar-hint-insecure');
-    hint.textContent = 'Point your camera at the Empire State Building';
+    hint.textContent = 'Match the outline to what you see';
   }
 }
 
@@ -246,7 +198,7 @@ function startAR() {
   const container = document.getElementById('ar-scan-container');
   if (!container) return;
 
-  resetARPhase1Hint();
+  resetOutlineHint();
 
   if (typeof AFRAME === 'undefined') {
     showARError('AR library failed to load. Check your network (A-Frame CDN) and refresh.');
@@ -262,76 +214,18 @@ function startAR() {
   requestAnimationFrame(() => {
     const active = document.querySelector('.screen.active');
     if (!active || active.dataset.screen !== 'ar-scan') return;
-    if (HIDDEN_GEM_DEMO) mountOutlineSceneInto(container);
-    else                 mountARSceneInto(container);
-  });
-}
+    mountOutlineSceneInto(container);
 
-function mountARSceneInto(container) {
-  // autoStart default is true — MindAR calls system.start() on 'renderstart',
-  // which requests camera access and begins tracking.
-  container.innerHTML = `
-    <a-scene id="ar-scene" embedded compass-updater
-      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; uiLoading: no; uiError: no;"
-      vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
-      renderer="alpha: true"
-      style="position:absolute;top:0;left:0;width:100%;height:100%;">
-      <a-assets></a-assets>
-      <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity id="esb-anchor" mindar-image-target="targetIndex: 0"></a-entity>
-      <a-entity id="stamp-entity" visible="false" stamp-billboard>
-        <a-circle radius="0.34" position="0 0 0"
-          material="shader: flat; color: #E26E5F; side: double"></a-circle>
-        <a-ring radius-inner="0.2" radius-outer="0.32" position="0 0 0.003"
-          material="shader: flat; color: #F4F0E8; side: double; opacity: 0.95; transparent: true"></a-ring>
-      </a-entity>
-    </a-scene>`;
-
-  arSceneEl = document.getElementById('ar-scene');
-  if (!arSceneEl) return;
-
-  const anchor = document.getElementById('esb-anchor');
-  if (anchor) {
-    anchor.addEventListener('targetFound', () => {
-      if (arPhase === 1) transitionToPhase2(anchor);
-    });
-  }
-
-  arSceneEl.addEventListener('renderstart', () => {
-    hideARCameraError();
-    if (arSceneEl && arSceneEl.renderer) {
-      arSceneEl.renderer.setClearColor(0x000000, 0);
-    }
-  }, { once: true });
-
-  // MindAR emits arError on the scene when getUserMedia fails or video cannot start.
-  arSceneEl.addEventListener('arError', (e) => {
-    const code = e.detail?.error ?? '';
-    showARError('Camera error — check permissions (' + code + ')');
-    let sub =
-      'Tap “Enable camera”, choose Allow, and use Safari/Chrome (not an in-app browser).';
+    // Browsers treat http://192.168… as insecure — camera will fail, but AR still opens.
     if (!window.isSecureContext) {
-      sub = 'Serve the app over HTTPS or localhost — insecure http (e.g. LAN IP) blocks camera.';
-    } else if (code === 'VIDEO_FAIL') {
-      sub =
-        'If you already allowed camera: try “Enable camera” again, open in Safari, or use a real device (simulators often have no rear camera).';
+      const hint = document.querySelector('#ar-phase-outline .ar-hint');
+      if (hint) {
+        hint.classList.add('ar-hint-insecure');
+        hint.textContent =
+          'Camera needs HTTPS on a phone. Use the https://….trycloudflare.com link from “npm run tunnel” on your computer — not http://192.168… or http://10.….';
+      }
     }
-    showARCameraError(sub);
   });
-
-  setARPhaseUI(1);
-
-  // Browsers treat http://192.168… as insecure — camera will fail, but AR still opens.
-  if (!window.isSecureContext) {
-    const hint = document.querySelector('#ar-phase-1 .ar-hint');
-    if (hint) {
-      hint.classList.add('ar-hint-insecure');
-      hint.textContent =
-        'Camera needs HTTPS on a phone. Use the https://….trycloudflare.com link from “npm run tunnel” on your computer — not http://192.168… or http://10.….';
-    }
-  }
 }
 
 // ---- Hidden-gem outline-alignment Phase 1 ----------------------------------
@@ -339,19 +233,15 @@ function mountARSceneInto(container) {
 let alignmentTickerId      = null;
 let alignmentSustainStart  = 0;
 let alignmentLocked        = false;
-let esbTargetVisible       = false;  // set by targetFound/targetLost on esb-anchor (index 0)
-let gemTargetVisible       = false;  // set by targetFound/targetLost on gem-anchor (index 1)
 let outlineMaskCanvas      = null;   // pre-binarized outline edge mask, used by visual validator
 let visualSampleCanvas     = null;   // reused per tick to avoid GC churn
 
 function mountOutlineSceneInto(container) {
-  prepareOutlineUI(getOutlineSrc());
+  prepareOutlineUI(OUTLINE_SRC);
 
-  // targets-combined.mind must contain both images in order:
-  //   index 0 — EmpireStateBuilding.jpeg  (SVG outline)
-  //   index 1 — HiddenGem.png             (AUTO outline)
-  // Compile at https://hiukim.github.io/mind-ar-js-doc/tools/compile
-  // Upload EmpireStateBuilding.jpeg first, then HiddenGem.png, then save to Assets/targets-combined.mind.
+  // MindAR provides the camera passthrough (<video> + alpha-clear renderer).
+  // No image-target anchors are used — alignment is handled entirely by the
+  // visual validator (Sobel edges of the camera ↔ outline mask IoU).
   container.innerHTML = `
     <a-scene id="ar-scene" embedded
       mindar-image="imageTargetSrc: ./Assets/targets-combined.mind; uiScanning: no; uiLoading: no; uiError: no;"
@@ -362,8 +252,6 @@ function mountOutlineSceneInto(container) {
       <a-assets></a-assets>
       <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity id="esb-anchor" mindar-image-target="targetIndex: 0"></a-entity>
-      <a-entity id="gem-anchor" mindar-image-target="targetIndex: 1"></a-entity>
       <a-entity id="stamp-entity" visible="false" stamp-billboard>
         <a-circle radius="0.34" position="0 0 0"
           material="shader: flat; color: #E26E5F; side: double"></a-circle>
@@ -378,20 +266,7 @@ function mountOutlineSceneInto(container) {
   arSceneEl.addEventListener('renderstart', () => {
     hideARCameraError();
     if (arSceneEl?.renderer) arSceneEl.renderer.setClearColor(0x000000, 0);
-    esbTargetVisible = false;
-    gemTargetVisible = false;
-    const esbAnchor = document.getElementById('esb-anchor');
-    const gemAnchor = document.getElementById('gem-anchor');
-    if (esbAnchor) {
-      esbAnchor.addEventListener('targetFound', () => { esbTargetVisible = true; });
-      esbAnchor.addEventListener('targetLost',  () => { esbTargetVisible = false; });
-    }
-    if (gemAnchor) {
-      gemAnchor.addEventListener('targetFound', () => { gemTargetVisible = true; });
-      gemAnchor.addEventListener('targetLost',  () => { gemTargetVisible = false; });
-    }
-    if (validatorMode === 'visual') startVisualAlignment();
-    else                            startMindARAlignment();
+    startVisualAlignment();
   }, { once: true });
 
   arSceneEl.addEventListener('arError', (e) => {
@@ -402,7 +277,7 @@ function mountOutlineSceneInto(container) {
     } else if (code === 'VIDEO_FAIL') {
       sub = 'Try “Enable camera” again, open in Safari, or use a real device.';
     } else if (code === 'INVALID_TARGET_URL' || code === 'TARGET_LOAD_FAIL') {
-      sub = 'targets-combined.mind not found — compile it at https://hiukim.github.io/mind-ar-js-doc/tools/compile (upload EmpireStateBuilding.jpeg first, then HiddenGem.png) and save to Assets/targets-combined.mind.';
+      sub = 'targets-combined.mind not found in Assets/.';
     }
     showARCameraError(sub);
   });
@@ -472,13 +347,8 @@ function onAlignmentLocked() {
 
   try { navigator.vibrate?.(80); } catch (_) {}
 
-  // Visual validator: stamp in world space (no image anchor needed).
-  // MindAR validator: stamp anchored to whichever target was being tracked.
-  const anchorEl = validatorMode === 'mindar'
-    ? (outlineMode === 'svg' ? document.getElementById('esb-anchor') : document.getElementById('gem-anchor'))
-    : null;
-
-  setTimeout(() => transitionToPhase2(anchorEl), 420);
+  // Visual validator only — stamp lives in world space, no image anchor.
+  setTimeout(() => transitionToPhase2(null), 420);
 }
 
 function stopAlignmentLoops() {
@@ -497,18 +367,18 @@ window.__forceAlign = function () {
 function startVisualAlignment() {
   if (alignmentTickerId !== null) stopAlignmentLoops();
 
-  const video = arSceneEl?.querySelector('video') || document.querySelector('#ar-scan-container video');
-  if (!video) return;
-
   if (!visualSampleCanvas) {
     visualSampleCanvas = document.createElement('canvas');
     visualSampleCanvas.width  = VISUAL_GRID_W;
     visualSampleCanvas.height = VISUAL_GRID_H;
   }
 
+  // The MindAR <video> element may not exist at renderstart on a fresh mount —
+  // re-query it every tick instead of bailing out of the whole loop. Once the
+  // video appears and outlineMaskCanvas finishes building, scoring kicks in.
   alignmentTickerId = setInterval(() => {
     if (alignmentLocked || arPhase !== 1) return;
-    const v = arSceneEl?.querySelector('video') || video;
+    const v = arSceneEl?.querySelector('video') || document.querySelector('#ar-scan-container video');
     if (!v || v.readyState < 2 || !outlineMaskCanvas) return;
 
     const targetRect = readOutlineTargetRect();
@@ -631,17 +501,6 @@ function iouScore(a, b) {
   return union === 0 ? 0 : inter / union;
 }
 
-// --- Validator B: MindAR event-based — SVG→ESB (index 0), AUTO→HiddenGem (index 1) ---
-
-function startMindARAlignment() {
-  if (alignmentTickerId !== null) stopAlignmentLoops();
-  alignmentTickerId = setInterval(() => {
-    if (alignmentLocked || arPhase !== 1) return;
-    const visible = outlineMode === 'svg' ? esbTargetVisible : gemTargetVisible;
-    applyAlignmentScore(visible ? 0 : 1);
-  }, ALIGNMENT_TICK_MS);
-}
-
 function transitionToPhase2(anchorEl) {
   const stampEl = document.getElementById('stamp-entity');
   if (!stampEl) return;
@@ -676,19 +535,16 @@ function transitionToPhase2(anchorEl) {
 }
 
 function setARPhaseUI(phase) {
-  const p1       = document.getElementById('ar-phase-1');
   const p1Out    = document.getElementById('ar-phase-outline');
   const p2       = document.getElementById('ar-phase-2');
   const tapHint  = document.getElementById('tap-to-collect');
-  const usingOutline = HIDDEN_GEM_DEMO;
-  if (p1)       p1.hidden    = (phase !== 1) || usingOutline;
-  if (p1Out)    p1Out.hidden = (phase !== 1) || !usingOutline;
+  if (p1Out)    p1Out.hidden = (phase !== 1);
   if (p2)       p2.hidden    = (phase !== 2);
   if (tapHint)  tapHint.hidden = true;
 }
 
 function showARError(msg) {
-  const hint = document.querySelector('#ar-phase-1 .ar-hint');
+  const hint = document.querySelector('#ar-phase-outline .ar-hint');
   if (hint) hint.textContent = msg;
 }
 
@@ -697,8 +553,6 @@ function stopAR() {
   stopAlignmentLoops();
   alignmentLocked = false;
   alignmentSustainStart = 0;
-  esbTargetVisible = false;
-  gemTargetVisible = false;
 
   if (arSceneEl) {
     const s = arSceneEl;
@@ -747,4 +601,3 @@ function collectStamp() {
 
 // ============ Boot ============
 show('splash');
-setupDevToggles();

@@ -74,25 +74,13 @@
             <span class="topbar-spacer"></span>
           </header>
 
-          <!-- Phase 1: find the building -->
-          <div id="ar-phase-1" class="ar-phase">
-            <div class="ar-viewfinder">
-              <div class="vf-corner tl"></div>
-              <div class="vf-corner tr"></div>
-              <div class="vf-corner bl"></div>
-              <div class="vf-corner br"></div>
-            </div>
-            <p class="ar-hint">Point your camera at the Empire State Building</p>
+          <!-- Phase 1: align outline of the hidden-gem spot -->
+          <div id="ar-phase-outline" class="ar-phase">
             <div id="ar-camera-error" class="ar-camera-error" hidden>
               <p class="ar-camera-error-title">Camera did not start</p>
               <p class="ar-camera-error-sub">Use Safari or Chrome over HTTPS (or localhost). Tap to try again.</p>
               <button type="button" class="btn btn-pill primary" data-ar-cam-retry>Enable camera</button>
             </div>
-            <div class="radar"><span></span></div>
-          </div>
-
-          <!-- Phase 1 (alternate): align an outline of a hidden-gem spot -->
-          <div id="ar-phase-outline" class="ar-phase" hidden>
             <div class="outline-stage" data-state="idle">
               <div class="outline-target" id="outline-target">
                 <div class="outline-img" id="outline-img" role="img" aria-label="Outline of the hidden gem"></div>
@@ -104,11 +92,6 @@
               </div>
             </div>
             <p class="ar-hint outline-hint" id="outline-hint">Match the outline to what you see</p>
-            <div class="dev-controls" id="dev-controls">
-              <button class="dev-toggle" id="toggle-validator" data-active="visual">VISUAL</button>
-              <button class="dev-toggle" id="toggle-outline"   data-active="svg">SVG</button>
-              <span class="dev-score" id="align-score">—</span>
-            </div>
           </div>
 
           <!-- Phase 2: hunt the stamp -->
