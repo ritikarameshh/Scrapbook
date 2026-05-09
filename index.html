@@ -299,24 +299,6 @@
     transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
   #hudSlot.visible { opacity: 1; transform: scale(1); }
-  #hudCollectedText {
-    position: fixed;
-    bottom: calc(var(--safe-bottom) + 110px);
-    right: 18px;
-    z-index: 11;
-    width: 84px;
-    text-align: center;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    color: var(--accent-gold);
-    text-shadow: 0 0 12px rgba(251,191,36,0.6);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.5s ease, transform 0.5s ease;
-    transform: translateY(8px);
-  }
-  #hudCollectedText.visible { opacity: 1; transform: translateY(0); }
 
   @keyframes float {
     0%, 100% { transform: translateY(0) rotate(-4deg); }
@@ -487,19 +469,18 @@
     margin: 0 auto 16px;
   }
   .factsCard .stampIconBig {
-    width: 100px;
-    height: 100px;
+    display: block;
+    width: 120px;
+    height: 120px;
     margin: 4px auto 14px;
     border-radius: 30px;
     background:
-      radial-gradient(circle at 30% 30%, var(--accent-gold), var(--accent-purple) 75%);
+      radial-gradient(circle at 30% 30%, rgba(251,191,36,0.35), rgba(168,85,247,0.35) 70%, transparent 100%);
     box-shadow:
       0 0 50px rgba(168,85,247,0.5),
-      inset 0 0 30px rgba(255,255,255,0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 48px;
+      inset 0 0 30px rgba(255,255,255,0.12);
+    object-fit: contain;
+    object-position: center;
     animation: float 4s ease-in-out infinite;
   }
   .factsCard h2 {
@@ -522,57 +503,21 @@
     text-transform: uppercase;
     margin-bottom: 18px;
   }
-  .factList {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 18px;
-  }
-  .factItem {
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 16px;
-    padding: 12px 14px;
-    display: flex;
-    gap: 12px;
-    align-items: flex-start;
-  }
-  .factItem .num {
-    flex: 0 0 26px;
-    height: 26px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+  .featuredFact {
+    background:
+      linear-gradient(135deg, rgba(168,85,247,0.18), rgba(251,191,36,0.10));
+    border: 1px solid rgba(251,191,36,0.35);
+    border-radius: 20px;
+    padding: 18px 20px;
+    margin-bottom: 22px;
+    text-align: center;
+    font-size: 15px;
+    line-height: 1.55;
+    color: var(--text);
+    min-height: 84px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 12px;
-    font-weight: 800;
-    color: #fff;
-    margin-top: 1px;
-  }
-  .factItem p {
-    font-size: 14px;
-    line-height: 1.45;
-    color: var(--text);
-  }
-  .activityBox {
-    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(251,191,36,0.10));
-    border: 1px solid rgba(251,191,36,0.35);
-    border-radius: 18px;
-    padding: 14px 16px;
-    margin-bottom: 18px;
-  }
-  .activityBox .label {
-    font-size: 11px;
-    font-weight: 800;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--accent-gold);
-    margin-bottom: 4px;
-  }
-  .activityBox p {
-    font-size: 14px;
-    line-height: 1.45;
   }
   .actionRow {
     display: flex;
@@ -585,6 +530,50 @@
   .actionRow .primaryBtn {
     flex: 1;
     padding: 14px 18px;
+  }
+
+  /* Celebration: facts-card bounce-in + confetti burst */
+  @keyframes celebrateBounce {
+    0%   { transform: scale(0.6); opacity: 0; }
+    55%  { transform: scale(1.06); opacity: 1; }
+    78%  { transform: scale(0.98); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  #factsModal.celebrating .factsCard {
+    animation: celebrateBounce 620ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    transform-origin: 50% 30%;
+  }
+
+  #confettiContainer {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    z-index: 36;
+    pointer-events: none;
+  }
+  .confettiPiece {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--sz, 8px);
+    height: var(--sz, 8px);
+    background: var(--col, #fff);
+    border-radius: 2px;
+    transform: translate(-50%, -50%) rotate(0deg);
+    animation: confettiBurst 1300ms cubic-bezier(0.15, 0.65, 0.25, 1) forwards;
+    will-change: transform, opacity;
+  }
+  @keyframes confettiBurst {
+    0%   { transform: translate(-50%, -50%) rotate(0deg); opacity: 1; }
+    15%  { opacity: 1; }
+    100% {
+      transform:
+        translate(calc(-50% + var(--dx, 0px)), calc(-50% + var(--dy, 0px)))
+        rotate(var(--rot, 360deg));
+      opacity: 0;
+    }
   }
 
   /* Tiny utility */
@@ -658,7 +647,6 @@
 
 <!-- HUD collected stamp slot (visual frame; the 3D stamp itself parents to camera) -->
 <div id="hudSlot"></div>
-<div id="hudCollectedText">Stamp Collected! ✨</div>
 
 <!-- Manual collect fallback -->
 <div id="manualCollect">
@@ -679,22 +667,21 @@
   <button class="primaryBtn" id="errorRetryBtn">Try Again</button>
 </div>
 
+<!-- Confetti container (celebration burst on facts reveal) -->
+<div id="confettiContainer"></div>
+
 <!-- Facts modal -->
 <div id="factsBackdrop"></div>
 <div id="factsModal">
   <div class="factsCard">
     <div class="grabber"></div>
-    <div class="stampIconBig">🪙</div>
-    <h2 id="stampNameLabel">The Mystic Orb</h2>
+    <img id="stampSnapshot" class="stampIconBig" alt="Collected stamp" />
+    <h2>FUN FACT!</h2>
     <div class="subtitle">Stamp Discovered</div>
-    <div class="factList" id="factList"></div>
-    <div class="activityBox">
-      <div class="label">Next Quest</div>
-      <p id="activityText"></p>
-    </div>
+    <div class="featuredFact" id="featuredFact"></div>
     <div class="actionRow">
       <button class="secondaryBtn" id="shareBtn">Share</button>
-      <button class="primaryBtn" id="dismissBtn">Got it →</button>
+      <button class="primaryBtn" id="dismissBtn">Find more places</button>
     </div>
   </div>
 </div>
@@ -726,8 +713,6 @@ const FUN_FACTS = [
   'Only 3 of these exist in the known world.',
   'Legend says it glows brighter in the presence of true curiosity.'
 ];
-const ACTIVITY_PROMPT = 'Can you find the next stamp hidden somewhere nearby? Keep exploring!';
-
 const STAMP_POSITION = new THREE.Vector3(1.4, 0.2, -2.4); // off-center → user must look
 const HUD_DEPTH = 1.6;          // local-z magnitude (camera-space depth)
 const HUD_LOCAL_SCALE = 0.18;
@@ -749,6 +734,12 @@ const OPEN_THRESHOLD     = 2.2;     // closure > this  → open
 const COUNTDOWN_DURATION = 3.0;     // seconds
 const CENTER_FOUND_FRACTION = 0.90; // very forgiving to accommodate desktop optical-flow imprecision
 const HAND_TIMEOUT_FOR_FALLBACK_MS = 8000; // show manual button after no hand
+
+/** After project(), Three NDC y grows toward the top of the screen. Cap it so
+ * the stamp never spawns in the upper "sky / roof" band. */
+const STAMP_MAX_SCREEN_NDC_Y = 0.34;
+const STAMP_NDC_CLAMP_STEP   = 0.065;
+const STAMP_MIN_WORLD_Y      = -0.75;
 
 /* =====================================================================
  * STATE MACHINE
@@ -819,7 +810,6 @@ const flashOverlay = document.getElementById('flashOverlay');
 const shockwave    = document.getElementById('shockwave');
 
 const hudSlot          = document.getElementById('hudSlot');
-const hudCollectedText = document.getElementById('hudCollectedText');
 
 const loadingScreen = document.getElementById('loadingScreen');
 const loadingText   = document.getElementById('loadingText');
@@ -833,13 +823,13 @@ const errorRetryBtn = document.getElementById('errorRetryBtn');
 const manualCollect    = document.getElementById('manualCollect');
 const manualCollectBtn = document.getElementById('manualCollectBtn');
 
-const factsBackdrop = document.getElementById('factsBackdrop');
-const factsModal    = document.getElementById('factsModal');
-const stampNameLbl  = document.getElementById('stampNameLabel');
-const factList      = document.getElementById('factList');
-const activityText  = document.getElementById('activityText');
-const shareBtn      = document.getElementById('shareBtn');
-const dismissBtn    = document.getElementById('dismissBtn');
+const confettiContainer = document.getElementById('confettiContainer');
+const factsBackdrop  = document.getElementById('factsBackdrop');
+const factsModal     = document.getElementById('factsModal');
+const stampSnapshot  = document.getElementById('stampSnapshot');
+const featuredFactEl = document.getElementById('featuredFact');
+const shareBtn       = document.getElementById('shareBtn');
+const dismissBtn     = document.getElementById('dismissBtn');
 
 /* =====================================================================
  * HAPTICS
@@ -1032,6 +1022,7 @@ let orientationSupported = false;
 let orientation = null;
 let screenOrient = 0;
 let stampPlacedFromOrientation = false;
+const _camUpForStampClamp = new THREE.Vector3();
 
 /* Place the stamp at a horizontal offset from the camera's current forward
  * vector so the user has to physically pan to find it. Idempotent: the first
@@ -1053,6 +1044,19 @@ function placeStampOffscreenFromCurrentView() {
   const angle = sign * THREE.MathUtils.degToRad(60 + Math.random() * 80);
   forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
   STAMP_POSITION.set(forward.x * 2.4, 0.2, forward.z * 2.4);
+
+  /* Screen-space clamp: if the projected stamp sits too high (roof/sky),
+   * step it downward along −camera up in world space until NDC y is in range. */
+  if (camera) {
+    _camUpForStampClamp.set(0, 1, 0).applyQuaternion(camera.quaternion);
+    for (let i = 0; i < 28; i++) {
+      _ndc.copy(STAMP_POSITION).project(camera);
+      if (_ndc.y <= STAMP_MAX_SCREEN_NDC_Y) break;
+      STAMP_POSITION.addScaledVector(_camUpForStampClamp, -STAMP_NDC_CLAMP_STEP);
+    }
+    STAMP_POSITION.y = Math.max(STAMP_POSITION.y, STAMP_MIN_WORLD_Y);
+  }
+
   stampRoot.position.copy(STAMP_POSITION);
   stampRoot.userData.basePosition.copy(STAMP_POSITION);
   stampPlacedFromOrientation = true;
@@ -1663,7 +1667,6 @@ function tickCollection(dt) {
       collection.phase = 'settle';
       collection.settleStartSec = clock.elapsedTime;
       hudSlot.classList.add('visible');
-      hudCollectedText.classList.add('visible');
       setState(STATES.COLLECTED);
     }
   }
@@ -2056,29 +2059,133 @@ function animate() {
 }
 
 /* =====================================================================
+ * STAMP SNAPSHOT — render the loaded coin to a small offscreen canvas
+ * and reuse the resulting data URL as the modal's hero image.
+ * ===================================================================== */
+let stampSnapshotUrl = null;
+function captureStampSnapshot() {
+  if (!stampReady || !stampRoot || stampSnapshotUrl) return;
+  const SIZE = 256;
+
+  const offCanvas = document.createElement('canvas');
+  offCanvas.width = SIZE;
+  offCanvas.height = SIZE;
+
+  const offRenderer = new THREE.WebGLRenderer({
+    canvas: offCanvas,
+    alpha: true,
+    antialias: true,
+    premultipliedAlpha: true
+  });
+  offRenderer.setPixelRatio(2);
+  offRenderer.setSize(SIZE, SIZE, false);
+  offRenderer.outputColorSpace = THREE.SRGBColorSpace;
+  offRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+  offRenderer.setClearColor(0x000000, 0);
+
+  const offScene = new THREE.Scene();
+  offScene.add(new THREE.AmbientLight(0xffffff, 0.85));
+  const key = new THREE.DirectionalLight(0xffffff, 1.6);
+  key.position.set(2, 3, 4);
+  offScene.add(key);
+  const fill = new THREE.DirectionalLight(0xb088ff, 0.55);
+  fill.position.set(-2, 1, 2);
+  offScene.add(fill);
+
+  // Clone the stamp at origin with cloned, fully-opaque materials so the
+  // current fade-in opacity on the live model doesn't leak through.
+  const clone = stampRoot.clone(true);
+  clone.position.set(0, 0, 0);
+  clone.rotation.set(-0.25, 0.45, 0); // gentle 3/4 view
+  clone.traverse(obj => {
+    if (obj.isMesh && obj.material) {
+      const m = obj.material.clone();
+      m.transparent = false;
+      m.opacity = 1;
+      if ('emissive' in m) {
+        m.emissive.setHex(0x000000);
+        m.emissiveIntensity = 0;
+      }
+      obj.material = m;
+    }
+  });
+  offScene.add(clone);
+
+  // Fit camera to the model
+  const box = new THREE.Box3().setFromObject(clone);
+  const size = new THREE.Vector3();
+  box.getSize(size);
+  const radius = Math.max(size.x, size.y, size.z) * 0.5 || 0.3;
+  const fov = 38;
+  const dist = (radius / Math.tan(THREE.MathUtils.degToRad(fov / 2))) * 1.35;
+  const offCam = new THREE.PerspectiveCamera(fov, 1, 0.01, 100);
+  offCam.position.set(0, 0, dist);
+  offCam.lookAt(0, 0, 0);
+
+  offRenderer.render(offScene, offCam);
+  stampSnapshotUrl = offCanvas.toDataURL('image/png');
+  offRenderer.dispose();
+
+  if (stampSnapshot) stampSnapshot.src = stampSnapshotUrl;
+}
+
+/* =====================================================================
  * FACTS MODAL
  * ===================================================================== */
-function buildFactList() {
-  factList.innerHTML = '';
-  FUN_FACTS.forEach((f, i) => {
-    const div = document.createElement('div');
-    div.className = 'factItem';
-    div.innerHTML = `<div class="num">${i + 1}</div><p>${f}</p>`;
-    factList.appendChild(div);
-  });
-  stampNameLbl.textContent = STAMP_NAME;
-  activityText.textContent = ACTIVITY_PROMPT;
+function pickFeaturedFact() {
+  if (!FUN_FACTS || FUN_FACTS.length === 0) return '';
+  return FUN_FACTS[(Math.random() * FUN_FACTS.length) | 0];
+}
+function buildFeaturedFact() {
+  featuredFactEl.textContent = pickFeaturedFact();
 }
 function showFactsModal() {
-  buildFactList();
+  buildFeaturedFact();
   factsBackdrop.classList.add('visible');
   factsModal.classList.add('visible');
+  // Re-arm the bounce animation so it replays on every reveal.
+  factsModal.classList.remove('celebrating');
+  void factsModal.offsetWidth;
+  factsModal.classList.add('celebrating');
   setState(STATES.FACTS_SHOWN);
+  triggerCelebration();
 }
 function hideFactsModal() {
   factsBackdrop.classList.remove('visible');
   factsModal.classList.remove('visible');
+  factsModal.classList.remove('celebrating');
   setState(STATES.COLLECTED);
+}
+
+/* =====================================================================
+ * CELEBRATION (haptic + confetti burst on facts reveal)
+ * ===================================================================== */
+const CONFETTI_COLORS = ['#fbbf24', '#a855f7', '#ec4899', '#ffffff', '#f5d0fe'];
+function triggerCelebration() {
+  vibrate([60, 40, 60, 40, 120, 40, 280]);
+  spawnConfetti(36);
+}
+function spawnConfetti(count) {
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confettiPiece';
+    const angle = Math.random() * Math.PI * 2;
+    const dist  = 140 + Math.random() * 180;            // outward radius
+    const dx    = Math.cos(angle) * dist;
+    const dy    = Math.sin(angle) * dist + 120;          // bias downward (gravity feel)
+    const sz    = 6 + Math.random() * 8;
+    const rot   = (Math.random() < 0.5 ? -1 : 1) * (240 + Math.random() * 540);
+    const col   = CONFETTI_COLORS[(Math.random() * CONFETTI_COLORS.length) | 0];
+    piece.style.setProperty('--dx',  `${dx.toFixed(1)}px`);
+    piece.style.setProperty('--dy',  `${dy.toFixed(1)}px`);
+    piece.style.setProperty('--sz',  `${sz.toFixed(1)}px`);
+    piece.style.setProperty('--rot', `${rot.toFixed(0)}deg`);
+    piece.style.setProperty('--col', col);
+    piece.addEventListener('animationend', () => piece.remove(), { once: true });
+    frag.appendChild(piece);
+  }
+  confettiContainer.appendChild(frag);
 }
 
 dismissBtn.addEventListener('click', hideFactsModal);
@@ -2180,6 +2287,9 @@ async function boot(camStreamPromise, orientPermPromise) {
     );
     return;
   }
+  // Render the loaded coin to a small offscreen canvas and use the snapshot
+  // as the modal's hero image. Fire-and-forget — failure is non-fatal.
+  try { captureStampSnapshot(); } catch (e) { console.warn('snapshot failed', e); }
 
   loadingText.textContent = 'Calibrating motion…';
   compassHint.classList.add('visible');
