@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Two Validators, Explained</title>
+<style>
+  :root{
+    --bg:#0e0f13; --card:#171922; --ink:#f3f4f8; --muted:#a3a8b8;
+    --a:#7cf4d1; --b:#ffb86b; --good:#9ef0a4; --bad:#ff9aa2; --line:#262936;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 20% -10%,#1d2030,#0e0f13);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Inter,sans-serif;line-height:1.55}
+  .wrap{max-width:980px;margin:0 auto;padding:48px 24px 96px}
+  h1{font-size:40px;margin:0 0 8px;letter-spacing:-0.02em}
+  .sub{color:var(--muted);font-size:18px;margin-bottom:36px}
+  .tldr{background:linear-gradient(135deg,#1a1d2a,#171922);border:1px solid var(--line);border-radius:16px;padding:18px 22px;margin-bottom:32px}
+  .tldr b{color:var(--a)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+  @media (max-width:760px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;position:relative;overflow:hidden}
+  .card.A::before,.card.B::before{content:"";position:absolute;inset:0 0 auto 0;height:4px}
+  .card.A::before{background:var(--a)}
+  .card.B::before{background:var(--b)}
+  .tag{display:inline-block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:999px;font-weight:600}
+  .tag.A{background:rgba(124,244,209,.12);color:var(--a)}
+  .tag.B{background:rgba(255,184,107,.12);color:var(--b)}
+  h2{margin:10px 0 4px;font-size:24px}
+  .nick{color:var(--muted);font-size:14px;margin-bottom:14px}
+  .how{margin:14px 0 6px;font-weight:600;color:#dfe2ee}
+  ol.steps{padding-left:18px;margin:0 0 10px}
+  ol.steps li{margin:6px 0}
+  .pill{display:flex;gap:10px;align-items:flex-start;margin:6px 0}
+  .pill .dot{width:18px;height:18px;border-radius:6px;flex:0 0 18px;margin-top:3px;display:grid;place-items:center;font-size:12px;font-weight:700}
+  .pro .dot{background:rgba(158,240,164,.15);color:var(--good)}
+  .con .dot{background:rgba(255,154,162,.15);color:var(--bad)}
+  .section-title{margin:14px 0 6px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .visual{background:#10121a;border:1px dashed var(--line);border-radius:12px;padding:14px;margin:8px 0 4px;text-align:center}
+  .compare{margin-top:36px;background:var(--card);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:14px 16px;text-align:left;border-bottom:1px solid var(--line);font-size:15px;vertical-align:top}
+  th{background:#1b1e2a;font-weight:600;color:#dfe2ee}
+  tr:last-child td{border-bottom:0}
+  td.label{color:var(--muted);width:32%}
+  .hint{margin-top:28px;color:var(--muted);font-size:14px;text-align:center}
+  .swatchA{color:var(--a);font-weight:600}
+  .swatchB{color:var(--b);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Two Validators, Explained</h1>
+  <div class="sub">How your AR app decides "yes, the user is pointing at the right thing."</div>
+
+  <div class="tldr">
+    <b>The job of a validator:</b> watch the camera and answer one question — <i>does what the camera sees match the outline we're asking the user to align to?</i> When the answer is yes, the app advances (drops the stamp). You have two very different ways of answering that question.
+  </div>
+
+  <div class="grid">
+
+    <!-- Validator A -->
+    <div class="card A">
+      <span class="tag A">Validator A</span>
+      <h2>Visual Edge Match</h2>
+      <div class="nick">"Trace the shape with your eyes."</div>
+
+      <div class="visual">
+        <svg viewBox="0 0 280 120" width="100%" height="110" aria-hidden="true">
+          <rect x="6" y="6" width="120" height="108" rx="8" fill="none" stroke="#7cf4d1" stroke-width="2"/>
+          <text x="66" y="64" fill="#7cf4d1" font-size="11" text-anchor="middle">camera frame</text>
+          <text x="66" y="80" fill="#a3a8b8" font-size="9" text-anchor="middle">→ edges</text>
+          <path d="M140 60 h18 m0 0 l-5 -4 m5 4 l-5 4" stroke="#a3a8b8" fill="none" stroke-width="1.5"/>
+          <rect x="166" y="6" width="108" height="108" rx="8" fill="none" stroke="#7cf4d1" stroke-width="2" stroke-dasharray="4 4"/>
+          <text x="220" y="64" fill="#7cf4d1" font-size="11" text-anchor="middle">outline mask</text>
+          <text x="220" y="80" fill="#a3a8b8" font-size="9" text-anchor="middle">overlap?</text>
+        </svg>
+      </div>
+
+      <div class="how">How it works</div>
+      <ol class="steps">
+        <li>Take the outline shape (SVG) and turn it into a black-and-white silhouette.</li>
+        <li>10× a second, grab the area of the camera <i>inside</i> the outline box.</li>
+        <li>Run an edge detector on it (finds the dark/light borders — the "lines" in the scene).</li>
+        <li>Compare the two: how much do the camera's edges <i>overlap</i> with the outline? More overlap = better score.</li>
+      </ol>
+
+      <div class="section-title">Pros</div>
+      <div class="pill pro"><span class="dot">+</span><div>Works with <b>any image</b> you can draw an outline of — no special training file needed.</div></div>
+      <div class="pill pro"><span class="dot">+</span><div>Cheap, runs entirely in the browser, no extra library.</div></div>
+      <div class="pill pro"><span class="dot">+</span><div>You stay in control of the math — easy to tune thresholds.</div></div>
+
+      <div class="section-title">Cons</div>
+      <div class="pill con"><span class="dot">−</span><div>Easily fooled by busy backgrounds (lots of edges that aren't your subject).</div></div>
+      <div class="pill con"><span class="dot">−</span><div>Sensitive to lighting and rotation — a tilted view scores worse even if it's correct.</div></div>
+      <div class="pill con"><span class="dot">−</span><div>No idea <i>where</i> the object actually is in 3D space.</div></div>
+    </div>
+
+    <!-- Validator B -->
+    <div class="card B">
+      <span class="tag B">Validator B</span>
+      <h2>MindAR Image Tracking</h2>
+      <div class="nick">"Did the tracker recognize the landmark?"</div>
+
+      <div class="visual">
+        <svg viewBox="0 0 280 120" width="100%" height="110" aria-hidden="true">
+          <rect x="6" y="6" width="120" height="108" rx="8" fill="none" stroke="#ffb86b" stroke-width="2"/>
+          <circle cx="40" cy="50" r="3" fill="#ffb86b"/><circle cx="70" cy="40" r="3" fill="#ffb86b"/>
+          <circle cx="90" cy="70" r="3" fill="#ffb86b"/><circle cx="55" cy="80" r="3" fill="#ffb86b"/>
+          <circle cx="100" cy="50" r="3" fill="#ffb86b"/>
+          <text x="66" y="105" fill="#ffb86b" font-size="11" text-anchor="middle">feature points</text>
+          <path d="M140 60 h18 m0 0 l-5 -4 m5 4 l-5 4" stroke="#a3a8b8" fill="none" stroke-width="1.5"/>
+          <rect x="166" y="6" width="108" height="108" rx="8" fill="none" stroke="#ffb86b" stroke-width="2"/>
+          <text x="220" y="58" fill="#ffb86b" font-size="11" text-anchor="middle">target found</text>
+          <text x="220" y="74" fill="#9ef0a4" font-size="11" text-anchor="middle">✓ score = 1</text>
+        </svg>
+      </div>
+
+      <div class="how">How it works</div>
+      <ol class="steps">
+        <li>Beforehand, you "train" a target file from a reference photo of the landmark.</li>
+        <li>MindAR watches the camera and looks for that landmark's <i>feature points</i> (little fingerprints of texture).</li>
+        <li>It fires an event: <code>targetFound</code> or <code>targetLost</code>.</li>
+        <li>Your validator just checks that flag: visible = pass.</li>
+      </ol>
+
+      <div class="section-title">Pros</div>
+      <div class="pill pro"><span class="dot">+</span><div>Far more accurate — it's actually recognizing the <b>thing</b>, not just shape overlap.</div></div>
+      <div class="pill pro"><span class="dot">+</span><div>Gives you 3D position too, so you can <b>anchor</b> the stamp to the landmark.</div></div>
+      <div class="pill pro"><span class="dot">+</span><div>Robust to angle, lighting, partial occlusion.</div></div>
+
+      <div class="section-title">Cons</div>
+      <div class="pill con"><span class="dot">−</span><div>Needs a pre-compiled <b>target file per landmark</b> — extra prep work.</div></div>
+      <div class="pill con"><span class="dot">−</span><div>Only works on things with rich texture; flat / repetitive surfaces won't track.</div></div>
+      <div class="pill con"><span class="dot">−</span><div>Heavier — pulls in a tracking library and uses more CPU.</div></div>
+    </div>
+
+  </div>
+
+  <!-- Side-by-side -->
+  <div class="compare">
+    <table>
+      <thead><tr><th>&nbsp;</th><th><span class="swatchA">A · Visual Edge</span></th><th><span class="swatchB">B · MindAR</span></th></tr></thead>
+      <tbody>
+        <tr><td class="label">What it compares</td><td>Camera edges vs. outline silhouette</td><td>Camera vs. trained landmark fingerprint</td></tr>
+        <tr><td class="label">Setup work</td><td>Just need an outline image</td><td>Compile a <code>.mind</code> target file</td></tr>
+        <tr><td class="label">Accuracy</td><td>Rough — shape match only</td><td>High — recognizes the actual object</td></tr>
+        <tr><td class="label">Knows 3D position?</td><td>No</td><td>Yes</td></tr>
+        <tr><td class="label">Best for</td><td>Quick demos, anything you can sketch</td><td>Real landmarks, anchored AR content</td></tr>
+        <tr><td class="label">Failure mode</td><td>False positives in busy scenes</td><td>Just won't detect (silent fail)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="hint">In your app, the toggle button swaps between these at runtime — same UI, two different brains deciding "good enough."</div>
+</div>
+</body>
+</html>

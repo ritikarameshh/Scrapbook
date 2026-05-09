@@ -111,16 +111,20 @@ let arSceneEl = null;
 // MindAR image detection. See docs/landmark-data-model.md for the long-term
 // per-landmark data shape this stand-in flag is meant to grow into.
 const HIDDEN_GEM_DEMO        = true;
-const ALIGNMENT_THRESHOLD    = 0.40;   // 40% — gates Phase 2
+const ALIGNMENT_THRESHOLD    = 0.50;   // tolerant IoU is more generous; 0.50 ≈ "roughly aligned"
 const ALIGNMENT_SUSTAIN_MS   = 1000;
 const ALIGNMENT_TICK_MS      = 100;    // visual validator runs at 10 Hz
 const VISUAL_GRID_W          = 192;    // downsampled Sobel grid; cheap on phones
 const VISUAL_GRID_H          = 256;
 const VISUAL_EDGE_THRESHOLD  = 60;     // 0..255
+const VISUAL_TOLERANCE_PX    = 4;      // tolerance-aware IoU: edges within N px count as a match
 
 // In-app toggles — switched via the dev-controls strip shown during outline Phase 1.
+// MindAR validator: SVG outline → ESB (targetIndex 0); AUTO outline → HiddenGem (targetIndex 1).
+// Both use targets-combined.mind (compile at https://hiukim.github.io/mind-ar-js-doc/tools/compile
+// by uploading EmpireStateBuilding.jpeg first, then HiddenGem.png).
 let validatorMode = 'visual'; // 'visual' | 'mindar'
-let outlineMode   = 'svg';    // 'svg'    | 'auto'
+let outlineMode   = 'auto';   // 'svg'    | 'auto'  — visual validator matches HiddenGem.auto.png against HiddenGem.png in camera
 
 function getOutlineSrc() {
   return outlineMode === 'auto'
@@ -149,11 +153,11 @@ function setupDevToggles() {
   oBtn.addEventListener('click', () => {
     outlineMode = outlineMode === 'svg' ? 'auto' : 'svg';
     syncButtons();
-    // Update the outline image live without restarting the loop.
     const src = getOutlineSrc();
     const imgEl = document.getElementById('outline-img');
     if (imgEl) imgEl.style.setProperty('--outline-src', `url("${src}")`);
     if (validatorMode === 'visual') buildOutlineMask(src);
+    if (arPhase === 1 && HIDDEN_GEM_DEMO) restartAlignmentLoop();
   });
 
   syncButtons();
@@ -162,6 +166,8 @@ function setupDevToggles() {
 function restartAlignmentLoop() {
   stopAlignmentLoops();
   alignmentSustainStart = 0;
+  esbTargetVisible = false;
+  gemTargetVisible = false;
   const stage = document.querySelector('#ar-phase-outline .outline-stage');
   if (stage) { stage.dataset.state = 'idle'; stage.style.setProperty('--sustain', '0'); }
   if (validatorMode === 'visual') startVisualAlignment();
@@ -333,22 +339,22 @@ function mountARSceneInto(container) {
 let alignmentTickerId      = null;
 let alignmentSustainStart  = 0;
 let alignmentLocked        = false;
+let esbTargetVisible       = false;  // set by targetFound/targetLost on esb-anchor (index 0)
+let gemTargetVisible       = false;  // set by targetFound/targetLost on gem-anchor (index 1)
 let outlineMaskCanvas      = null;   // pre-binarized outline edge mask, used by visual validator
 let visualSampleCanvas     = null;   // reused per tick to avoid GC churn
 
 function mountOutlineSceneInto(container) {
   prepareOutlineUI(getOutlineSrc());
 
-  // Visual validator: targets.mind is only used for the camera feed; detections are ignored.
-  // MindAR validator: targets-hiddengem.mind must contain ONLY HiddenGem.png (index 0)
-  //   — compile it at https://hiukim.github.io/mind-ar-js-doc/tools/compile
-  //     then save to Assets/targets-hiddengem.mind.
-  const mindSrc = validatorMode === 'mindar'
-    ? './Assets/targets-hiddengem.mind'
-    : './targets.mind';
+  // targets-combined.mind must contain both images in order:
+  //   index 0 — EmpireStateBuilding.jpeg  (SVG outline)
+  //   index 1 — HiddenGem.png             (AUTO outline)
+  // Compile at https://hiukim.github.io/mind-ar-js-doc/tools/compile
+  // Upload EmpireStateBuilding.jpeg first, then HiddenGem.png, then save to Assets/targets-combined.mind.
   container.innerHTML = `
     <a-scene id="ar-scene" embedded
-      mindar-image="imageTargetSrc: ${mindSrc}; uiScanning: no; uiLoading: no; uiError: no;"
+      mindar-image="imageTargetSrc: ./Assets/targets-combined.mind; uiScanning: no; uiLoading: no; uiError: no;"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       renderer="alpha: true"
@@ -356,12 +362,8 @@ function mountOutlineSceneInto(container) {
       <a-assets></a-assets>
       <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity id="esb-anchor" mindar-image-target="targetIndex: 0">
-        <a-entity class="gem-corner" data-corner="tl" position="-0.5  0.5 0"></a-entity>
-        <a-entity class="gem-corner" data-corner="tr" position=" 0.5  0.5 0"></a-entity>
-        <a-entity class="gem-corner" data-corner="bl" position="-0.5 -0.5 0"></a-entity>
-        <a-entity class="gem-corner" data-corner="br" position=" 0.5 -0.5 0"></a-entity>
-      </a-entity>
+      <a-entity id="esb-anchor" mindar-image-target="targetIndex: 0"></a-entity>
+      <a-entity id="gem-anchor" mindar-image-target="targetIndex: 1"></a-entity>
       <a-entity id="stamp-entity" visible="false" stamp-billboard>
         <a-circle radius="0.34" position="0 0 0"
           material="shader: flat; color: #E26E5F; side: double"></a-circle>
@@ -376,14 +378,18 @@ function mountOutlineSceneInto(container) {
   arSceneEl.addEventListener('renderstart', () => {
     hideARCameraError();
     if (arSceneEl?.renderer) arSceneEl.renderer.setClearColor(0x000000, 0);
-    // Wire targetFound/targetLost for the MindAR validator.
+    esbTargetVisible = false;
     gemTargetVisible = false;
-    const anchor = document.getElementById('esb-anchor');
-    if (anchor) {
-      anchor.addEventListener('targetFound', () => { gemTargetVisible = true; });
-      anchor.addEventListener('targetLost',  () => { gemTargetVisible = false; });
+    const esbAnchor = document.getElementById('esb-anchor');
+    const gemAnchor = document.getElementById('gem-anchor');
+    if (esbAnchor) {
+      esbAnchor.addEventListener('targetFound', () => { esbTargetVisible = true; });
+      esbAnchor.addEventListener('targetLost',  () => { esbTargetVisible = false; });
     }
-    // Camera is live — kick off whichever loop is currently selected.
+    if (gemAnchor) {
+      gemAnchor.addEventListener('targetFound', () => { gemTargetVisible = true; });
+      gemAnchor.addEventListener('targetLost',  () => { gemTargetVisible = false; });
+    }
     if (validatorMode === 'visual') startVisualAlignment();
     else                            startMindARAlignment();
   }, { once: true });
@@ -396,7 +402,7 @@ function mountOutlineSceneInto(container) {
     } else if (code === 'VIDEO_FAIL') {
       sub = 'Try “Enable camera” again, open in Safari, or use a real device.';
     } else if (code === 'INVALID_TARGET_URL' || code === 'TARGET_LOAD_FAIL') {
-      sub = 'targets-hiddengem.mind not found — visit /compile.html in your browser to generate it first.';
+      sub = 'targets-combined.mind not found — compile it at https://hiukim.github.io/mind-ar-js-doc/tools/compile (upload EmpireStateBuilding.jpeg first, then HiddenGem.png) and save to Assets/targets-combined.mind.';
     }
     showARCameraError(sub);
   });
@@ -421,7 +427,6 @@ function prepareOutlineUI(outlineSrc) {
   if (scoreEl) scoreEl.textContent = '—';
   if (hintEl)  hintEl.textContent = 'Match the outline to what you see';
 
-  // Pre-build the outline edge mask for the visual validator.
   buildOutlineMask(outlineSrc);
 }
 
@@ -467,10 +472,12 @@ function onAlignmentLocked() {
 
   try { navigator.vibrate?.(80); } catch (_) {}
 
-  const validator = getValidatorMode();
-  const anchorEl = (validator === 'mindar') ? document.getElementById('esb-anchor') : null;
+  // Visual validator: stamp in world space (no image anchor needed).
+  // MindAR validator: stamp anchored to whichever target was being tracked.
+  const anchorEl = validatorMode === 'mindar'
+    ? (outlineMode === 'svg' ? document.getElementById('esb-anchor') : document.getElementById('gem-anchor'))
+    : null;
 
-  // Brief lock-in beat, then hand off to the existing Phase 2 hunt.
   setTimeout(() => transitionToPhase2(anchorEl), 420);
 }
 
@@ -485,7 +492,7 @@ window.__forceAlign = function () {
   applyAlignmentScore(0);
 };
 
-// --- Validator A: visual edge matching ---------------------------------------
+// --- Validator A: visual edge matching (Sobel + IoU) -------------------------
 
 function startVisualAlignment() {
   if (alignmentTickerId !== null) stopAlignmentLoops();
@@ -510,14 +517,12 @@ function startVisualAlignment() {
     const ctx = visualSampleCanvas.getContext('2d', { willReadFrequently: true });
     if (!ctx) return;
 
-    // Draw the camera frame, cropped to the outline's screen-space rectangle.
     const vw = v.videoWidth, vh = v.videoHeight;
     if (!vw || !vh) return;
     const screenW = window.innerWidth, screenH = window.innerHeight;
-    const scale = Math.max(screenW / vw, screenH / vh);     // matches CSS object-fit: cover
+    const scale = Math.max(screenW / vw, screenH / vh);
     const drawW = vw * scale, drawH = vh * scale;
     const dx = (screenW - drawW) / 2, dy = (screenH - drawH) / 2;
-    // Source rect in video space corresponding to the outline's screen rect:
     const srcX = (targetRect.left   - dx) / scale;
     const srcY = (targetRect.top    - dy) / scale;
     const srcW = targetRect.width  / scale;
@@ -525,10 +530,31 @@ function startVisualAlignment() {
 
     ctx.drawImage(v, srcX, srcY, srcW, srcH, 0, 0, VISUAL_GRID_W, VISUAL_GRID_H);
     const camMask = sobelEdgeMask(ctx.getImageData(0, 0, VISUAL_GRID_W, VISUAL_GRID_H));
-
-    const score = iouScore(camMask, outlineMaskCanvas.data);
-    applyAlignmentScore(1 - score);
+    // Tolerance-aware IoU: dilate both sides so edges within VISUAL_TOLERANCE_PX
+    // count as a match. The on-screen outline image stays crisp; only the
+    // scoring uses the fattened versions.
+    const camDilated = dilateMask(camMask, VISUAL_GRID_W, VISUAL_GRID_H, VISUAL_TOLERANCE_PX);
+    applyAlignmentScore(1 - iouScore(camDilated, outlineMaskCanvas.dilated));
   }, ALIGNMENT_TICK_MS);
+}
+
+function dilateMask(mask, w, h, iters) {
+  let cur = mask;
+  for (let it = 0; it < iters; it++) {
+    const next = new Uint8Array(cur.length);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = y * w + x;
+        if (cur[i]) { next[i] = 1; continue; }
+        if ((x > 0       && cur[i - 1]) ||
+            (x < w - 1   && cur[i + 1]) ||
+            (y > 0       && cur[i - w]) ||
+            (y < h - 1   && cur[i + w])) next[i] = 1;
+      }
+    }
+    cur = next;
+  }
+  return cur;
 }
 
 function readOutlineTargetRect() {
@@ -548,28 +574,27 @@ function buildOutlineMask(src) {
     const cx = c.getContext('2d');
     if (!cx) return;
     cx.clearRect(0, 0, c.width, c.height);
-    // Letterbox the outline into the cell preserving aspect, matching its on-screen contain.
     const ar = img.naturalWidth / img.naturalHeight;
     const cellAr = VISUAL_GRID_W / VISUAL_GRID_H;
-    let dw = VISUAL_GRID_W, dh = VISUAL_GRID_H, dx = 0, dy = 0;
-    if (ar > cellAr) { dh = VISUAL_GRID_W / ar; dy = (VISUAL_GRID_H - dh) / 2; }
-    else             { dw = VISUAL_GRID_H * ar; dx = (VISUAL_GRID_W - dw) / 2; }
-    cx.drawImage(img, dx, dy, dw, dh);
-
+    let dw = VISUAL_GRID_W, dh = VISUAL_GRID_H, ddx = 0, ddy = 0;
+    if (ar > cellAr) { dh = VISUAL_GRID_W / ar; ddy = (VISUAL_GRID_H - dh) / 2; }
+    else             { dw = VISUAL_GRID_H * ar; ddx = (VISUAL_GRID_W - dw) / 2; }
+    cx.drawImage(img, ddx, ddy, dw, dh);
     const id = cx.getImageData(0, 0, c.width, c.height);
     const mask = new Uint8Array(c.width * c.height);
     for (let i = 0; i < mask.length; i++) {
-      // Mask = pixels with non-trivial alpha OR strong dark luminance (handles SVGs that paint with color).
       const a = id.data[i * 4 + 3];
       const lum = 0.299 * id.data[i * 4] + 0.587 * id.data[i * 4 + 1] + 0.114 * id.data[i * 4 + 2];
       mask[i] = (a > 80 && lum < 200) || a > 200 ? 1 : 0;
     }
-    outlineMaskCanvas = { data: mask, width: c.width, height: c.height };
+    outlineMaskCanvas = {
+      data: mask,
+      dilated: dilateMask(mask, c.width, c.height, VISUAL_TOLERANCE_PX),
+      width: c.width,
+      height: c.height,
+    };
   };
-  img.onerror = () => {
-    console.warn('[outline] failed to load mask source:', src);
-    outlineMaskCanvas = null;
-  };
+  img.onerror = () => { outlineMaskCanvas = null; };
   img.src = src;
 }
 
@@ -590,8 +615,7 @@ function sobelEdgeMask(imageData) {
       const gy =
         -gray[i - w - 1] - 2 * gray[i - w] - gray[i - w + 1] +
          gray[i + w - 1] + 2 * gray[i + w] + gray[i + w + 1];
-      const m = Math.abs(gx) + Math.abs(gy);   // L1 — close to L2 but no sqrt
-      out[i] = m > VISUAL_EDGE_THRESHOLD ? 1 : 0;
+      out[i] = (Math.abs(gx) + Math.abs(gy)) > VISUAL_EDGE_THRESHOLD ? 1 : 0;
     }
   }
   return out;
@@ -601,70 +625,20 @@ function iouScore(a, b) {
   let inter = 0, union = 0;
   const n = Math.min(a.length, b.length);
   for (let i = 0; i < n; i++) {
-    const ai = a[i], bi = b[i];
-    if (ai && bi) inter++;
-    if (ai || bi) union++;
+    if (a[i] && b[i]) inter++;
+    if (a[i] || b[i]) union++;
   }
   return union === 0 ? 0 : inter / union;
 }
 
-// --- Validator B: MindAR projected corners -----------------------------------
+// --- Validator B: MindAR event-based — SVG→ESB (index 0), AUTO→HiddenGem (index 1) ---
 
 function startMindARAlignment() {
   if (alignmentTickerId !== null) stopAlignmentLoops();
-
-  // Cheaper than registering an A-Frame component since we already have a tick driver.
   alignmentTickerId = setInterval(() => {
     if (alignmentLocked || arPhase !== 1) return;
-    const anchor = document.getElementById('esb-anchor');
-    const cameraEl = arSceneEl?.querySelector('[camera]');
-    if (!anchor || !cameraEl) return;
-    const camera = cameraEl.getObject3D('camera');
-    if (!camera) return;
-
-    const corners = anchor.querySelectorAll('.gem-corner');
-    if (corners.length !== 4) return;
-
-    // If any corner hasn't initialised in 3D space, the target hasn't been seen yet.
-    let anyTracked = false;
-    const pts = [];
-    const v = new AFRAME.THREE.Vector3();
-    corners.forEach(c => {
-      if (!c.object3D) return;
-      c.object3D.getWorldPosition(v);
-      if (Math.hypot(v.x, v.y, v.z) > 0.001) anyTracked = true;
-      const projected = v.clone().project(camera);
-      pts.push({
-        x: (projected.x + 1) * 0.5 * window.innerWidth,
-        y: (1 - projected.y) * 0.5 * window.innerHeight,
-        z: projected.z,
-      });
-    });
-
-    if (!anyTracked) {
-      applyAlignmentScore(1);   // building isn't seen yet — keep state in 'far'
-      return;
-    }
-
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (const p of pts) {
-      if (p.x < minX) minX = p.x;
-      if (p.y < minY) minY = p.y;
-      if (p.x > maxX) maxX = p.x;
-      if (p.y > maxY) maxY = p.y;
-    }
-    const projW = maxX - minX, projH = maxY - minY;
-    const projCx = (minX + maxX) / 2, projCy = (minY + maxY) / 2;
-
-    const target = readOutlineTargetRect();
-    if (!target) return;
-    const targetCx = target.left + target.width  / 2;
-    const targetCy = target.top  + target.height / 2;
-
-    const dx = Math.abs(projCx - targetCx) / window.innerWidth;
-    const dy = Math.abs(projCy - targetCy) / window.innerHeight;
-    const ds = Math.abs(projH - target.height) / target.height;
-    applyAlignmentScore(Math.max(dx, dy, ds));
+    const visible = outlineMode === 'svg' ? esbTargetVisible : gemTargetVisible;
+    applyAlignmentScore(visible ? 0 : 1);
   }, ALIGNMENT_TICK_MS);
 }
 
@@ -723,6 +697,8 @@ function stopAR() {
   stopAlignmentLoops();
   alignmentLocked = false;
   alignmentSustainStart = 0;
+  esbTargetVisible = false;
+  gemTargetVisible = false;
 
   if (arSceneEl) {
     const s = arSceneEl;
