@@ -124,6 +124,12 @@ const HIDDEN_GEMS = [
   { id: 'gallery', title: 'A gallery where you can hear whispers across the room', type: 'Gallery',      walkMin: 7,  color: '#3F5532' },
   { id: 'install', title: 'A hidden away art installation',                        type: 'Art install.', walkMin: 11, color: '#E26E5F' },
 ];
+// Local offsets in camera space (camera looks down -Z); remapped through matrixWorld when gyro is on.
+const PHASE3_PIN_LAYOUT = [
+  { angleDeg: -22, radius: 1.1, y:  0.15 },
+  { angleDeg:   0, radius: 1.2, y:  0.45 },
+  { angleDeg:  22, radius: 1.1, y: -0.15 },
+];
 let currentGemId = null;
 let gemToastTimer = null;
 
@@ -135,131 +141,44 @@ function restartAlignmentLoop() {
   startVisualAlignment();
 }
 
-// World-locked stamp: billboard each frame so the disc faces the phone (portrait-friendly).
-if (typeof AFRAME !== 'undefined' && !AFRAME.components['stamp-billboard']) {
-  AFRAME.registerComponent('stamp-billboard', {
-    tick() {
-      if (arPhase !== 2 || !this.el.sceneEl) return;
-      const camEl = this.el.sceneEl.querySelector('[camera]');
-      if (!camEl) return;
-      const camWorld = new AFRAME.THREE.Vector3();
-      camEl.object3D.getWorldPosition(camWorld);
-      this.el.object3D.lookAt(camWorld);
-    },
-  });
-}
-
-// Register compass tick component before any A-Frame scene is created.
-// Runs every frame during phase 2 to rotate the compass arrow toward the stamp.
-if (typeof AFRAME !== 'undefined' && !AFRAME.components['compass-updater']) {
-  AFRAME.registerComponent('compass-updater', {
-    tick() {
-      if (arPhase !== 2) return;
-      const stampEl  = document.getElementById('stamp-entity');
-      const cameraEl = this.el.querySelector('[camera]');
-      if (!stampEl || !cameraEl) return;
-
-      const camera = cameraEl.getObject3D('camera');
-      if (!camera) return;
-
-      const worldPos  = new AFRAME.THREE.Vector3();
-      stampEl.object3D.getWorldPosition(worldPos);
-      const projected = worldPos.clone().project(camera);
-
-      const compassArrow = document.querySelector('.compass-arrow');
-      if (compassArrow) {
-        const angle = Math.atan2(projected.x, projected.y);
-        compassArrow.style.transform = `rotate(${angle}rad)`;
-      }
-
-      const inView =
-        Math.abs(projected.x) < 0.48 &&
-        Math.abs(projected.y) < 0.55 &&
-        projected.z > -1 &&
-        projected.z < 1;
-      const tapHint = document.getElementById('tap-to-collect');
-      if (tapHint) tapHint.hidden = !inView;
-    },
-  });
-}
-
-// Phase 3 gem pin: data-only marker. Click handling is driven by attachPhase3PinPicker
-// (manual canvas raycast) for reliability across the dynamically swapped scene.
+// Phase 3 gem pin: open the HTML detail card on tap.
+// Click events come from A-Frame's cursor + raycaster on the camera (see Phase 3 scene mount).
 if (typeof AFRAME !== 'undefined' && !AFRAME.components['gem-pin']) {
   AFRAME.registerComponent('gem-pin', {
     schema: { id: { type: 'string' } },
+    init() {
+      this.onClick = () => {
+        if (arPhase !== 3) return;
+        playPinClickFx(this.el);
+        openGemCard(this.data.id);
+      };
+      this.el.addEventListener('click', this.onClick);
+    },
+    remove() {
+      this.el.removeEventListener('click', this.onClick);
+    },
   });
 }
 
-let phase3PickerBound = null;
-function attachPhase3PinPicker() {
-  if (!arSceneEl) return;
-  const canvas = arSceneEl.canvas || arSceneEl.querySelector('canvas');
-  if (!canvas) {
-    console.warn('[hidden-gem] no canvas yet, retrying picker in 200ms');
-    setTimeout(attachPhase3PinPicker, 200);
-    return;
-  }
-  if (phase3PickerBound) {
-    phase3PickerBound.canvas.removeEventListener('click', phase3PickerBound.handler);
-  }
-
-  const handler = (ev) => {
-    console.log('[hidden-gem] canvas click at', ev.clientX, ev.clientY, 'phase=', arPhase);
-    if (arPhase !== 3 || !arSceneEl) return;
-
-    const camEl = arSceneEl.querySelector('[camera]');
-    const cam = camEl?.getObject3D('camera');
-    if (!cam) { console.warn('[hidden-gem] no camera object3D'); return; }
-
-    const rect = canvas.getBoundingClientRect();
-    const ndc = new AFRAME.THREE.Vector2(
-      ((ev.clientX - rect.left) / rect.width) * 2 - 1,
-      -((ev.clientY - rect.top) / rect.height) * 2 + 1,
-    );
-
-    const raycaster = new AFRAME.THREE.Raycaster();
-    raycaster.setFromCamera(ndc, cam);
-
-    const pinEls = Array.from(arSceneEl.querySelectorAll('.gem-pin'));
-    const objects = pinEls.map((p) => p.object3D).filter(Boolean);
-    const hits = raycaster.intersectObjects(objects, true);
-    console.log('[hidden-gem] raycast hits:', hits.length, 'pins in scene:', pinEls.length);
-
-    if (!hits.length) return;
-
-    // Walk up to find the .gem-pin entity that owns the hit mesh.
-    let obj = hits[0].object;
-    while (obj && !(obj.el && obj.el.classList?.contains('gem-pin'))) obj = obj.parent;
-    const pinEl = obj?.el;
-    if (!pinEl) { console.warn('[hidden-gem] hit had no .gem-pin ancestor'); return; }
-
-    const id = pinEl.components?.['gem-pin']?.data?.id;
-    console.log('[hidden-gem] CLICK on pin id=', id);
-    playPinClickFx(pinEl);
-    if (id) openGemCard(id);
-  };
-
-  canvas.addEventListener('click', handler);
-  phase3PickerBound = { canvas, handler };
-  console.log('[hidden-gem] picker attached to canvas', canvas);
-}
-
+// Brief scale-down then back, applied on the inner gltf wrapper so it doesn't
+// clobber the outer pin's bob animation (which animates position).
 function playPinClickFx(pinEl) {
-  // Brief scale-down then back, so the tap reads visually.
-  pinEl.removeAttribute('animation__click');
-  pinEl.removeAttribute('animation__clickback');
-  pinEl.setAttribute('animation__click', {
+  const target = pinEl.querySelector('[gltf-model]') || pinEl;
+  const baseScale = target.getAttribute('scale') || { x: 0.14, y: 0.14, z: 0.14 };
+  const bx = baseScale.x ?? 0.14, by = baseScale.y ?? 0.14, bz = baseScale.z ?? 0.14;
+  const sx = bx * 0.7, sy = by * 0.7, sz = bz * 0.7;
+
+  target.removeAttribute('animation__click');
+  target.removeAttribute('animation__clickback');
+  target.setAttribute('animation__click', {
     property: 'scale',
-    from:     '1 1 1',
-    to:       '0.7 0.7 0.7',
+    to:       `${sx} ${sy} ${sz}`,
     dur:      110,
     easing:   'easeOutQuad',
   });
-  pinEl.setAttribute('animation__clickback', {
+  target.setAttribute('animation__clickback', {
     property: 'scale',
-    from:     '0.7 0.7 0.7',
-    to:       '1 1 1',
+    to:       `${bx} ${by} ${bz}`,
     dur:      180,
     delay:    110,
     easing:   'easeOutBack',
@@ -344,12 +263,6 @@ function mountOutlineSceneInto(container) {
       <a-assets></a-assets>
       <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity id="stamp-entity" visible="false" stamp-billboard>
-        <a-circle radius="0.34" position="0 0 0"
-          material="shader: flat; color: #E26E5F; side: double"></a-circle>
-        <a-ring radius-inner="0.2" radius-outer="0.32" position="0 0 0.003"
-          material="shader: flat; color: #F4F0E8; side: double; opacity: 0.95; transparent: true"></a-ring>
-      </a-entity>
     </a-scene>`;
 
   arSceneEl = document.getElementById('ar-scene');
@@ -439,8 +352,8 @@ function onAlignmentLocked() {
 
   try { navigator.vibrate?.(80); } catch (_) {}
 
-  // Visual validator only — stamp lives in world space, no image anchor.
-  setTimeout(() => transitionToPhase2(null), 420);
+  // Visual validator locked — hand off to the phase 2 stamp-hunt module.
+  setTimeout(() => transitionToPhase2(), 420);
 }
 
 function stopAlignmentLoops() {
@@ -593,49 +506,46 @@ function iouScore(a, b) {
   return union === 0 ? 0 : inter / union;
 }
 
-function transitionToPhase2(anchorEl) {
-  const stampEl = document.getElementById('stamp-entity');
-  if (!stampEl) return;
+let phase2HuntModule = null;
 
-  const angle = Math.random() * Math.PI * 2;
-  const radius = 0.48 + Math.random() * 0.42;
-  const yLift = 0.18 + Math.random() * 0.28;
-
-  if (anchorEl) {
-    // Scavenger hunt anchored to the tracked image: stamp is in image-local space.
-    anchorEl.appendChild(stampEl);
-    stampEl.setAttribute('position', {
-      x: Math.cos(angle) * radius,
-      y: yLift,
-      z: Math.sin(angle) * radius,
-    });
-  } else {
-    // Visual-validator path (no MindAR anchor): stamp lives in world space, ahead of camera.
-    stampEl.setAttribute('position', {
-      x: Math.cos(angle) * radius,
-      y: yLift,
-      z: -1.4 + Math.sin(angle) * radius * 0.6,
-    });
-  }
-
-  stampEl.setAttribute('rotation', { x: 0, y: 0, z: 0 });
-  stampEl.setAttribute('visible', true);
-  stampEl.object3D.visible = true;
+async function transitionToPhase2() {
+  // Tear down Phase 1's MindAR scene first — phase2-hunt.js owns its own
+  // camera + Three.js scene and re-requests getUserMedia.
+  teardownMindARScene();
 
   arPhase = 2;
   setARPhaseUI(2);
+
+  const host = document.getElementById('ar-phase-2-host');
+  if (!host) return;
+
+  try {
+    if (!phase2HuntModule) phase2HuntModule = await import('./phase2-hunt.js');
+    phase2HuntModule.startPhase2Hunt({
+      host,
+      stampUrl: './Assets/rodeo_coin.gltf',
+      onCollected: collectStamp,
+      onError: showARError,
+    });
+  } catch (err) {
+    console.error('[script] failed to start phase 2 hunt', err);
+    showARError('Could not start the stamp hunt — please reload.');
+  }
+}
+
+function stopPhase2HuntIfRunning() {
+  try { phase2HuntModule?.stopPhase2Hunt(); } catch (_) {}
 }
 
 function setARPhaseUI(phase) {
   const p1Out    = document.getElementById('ar-phase-outline');
   const p2       = document.getElementById('ar-phase-2');
   const p3       = document.getElementById('ar-phase-3');
-  const tapHint  = document.getElementById('tap-to-collect');
   if (p1Out)    p1Out.hidden = (phase !== 1);
   if (p2)       p2.hidden    = (phase !== 2);
   if (p3)       p3.hidden    = (phase !== 3);
-  if (tapHint)  tapHint.hidden = true;
-  if (phase !== 3) closeGemCard();
+  // Bottom detail sheet: only opened from a pin tap (`openGemCard`); clear whenever AR phase UI changes.
+  closeGemCard();
 }
 
 let phase3VideoStream = null;
@@ -656,6 +566,12 @@ function teardownMindARScene() {
 function transitionToPhase3() {
   // MindAR's image-tracking renderer is unstable here (broken targets-combined.mind),
   // so for Phase 3 we swap to a plain A-Frame scene with a manual camera-feed video.
+  // iOS 13+: device orientation must be requested from a user gesture; collectStamp() calls
+  // us synchronously from the ar-scan click handler, so this runs inside that gesture.
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission().catch(() => {});
+  }
+
   teardownMindARScene();
   closeGemCard();
 
@@ -667,17 +583,22 @@ function transitionToPhase3() {
       style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;"></video>
     <a-scene id="ar-scene" embedded
       vr-mode-ui="enabled: false"
-      device-orientation-permission-ui="enabled: false"
+      device-orientation-permission-ui="enabled: true"
       renderer="alpha: true"
       style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;">
+      <a-entity id="phase3-world-root" position="0 0 0"></a-entity>
       <a-light type="ambient" color="#ffffff" intensity="0.9"></a-light>
-      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      <!-- Magic-window: camera follows device orientation so pins (children of phase3-world-root)
+           stay fixed in space; with look-controls off, the frustum never moves and pins read HUD-stuck. -->
+      <a-camera position="0 0 0"
+        look-controls="enabled: true; touchEnabled: false; mouseEnabled: false; magicWindowTrackingEnabled: true">
+        <a-entity cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .gem-pin; far: 50"></a-entity>
+      </a-camera>
     </a-scene>`;
 
   arSceneEl = document.getElementById('ar-scene');
   arSceneEl?.addEventListener('renderstart', () => {
     if (arSceneEl?.renderer) arSceneEl.renderer.setClearColor(0x000000, 0);
-    attachPhase3PinPicker();
   }, { once: true });
 
   // Camera passthrough via getUserMedia (independent of MindAR).
@@ -702,16 +623,56 @@ function transitionToPhase3() {
   else arSceneEl?.addEventListener('loaded', spawnPins, { once: true });
 }
 
+function repositionPhase3PinsFacingCamera(scene) {
+  if (typeof AFRAME === 'undefined' || arPhase !== 3) return;
+  const camEl = scene.querySelector('[camera]');
+  const pins = scene.querySelectorAll('.gem-pin');
+  if (!camEl || !pins.length) return;
+
+  camEl.object3D.updateMatrixWorld(true);
+  const mw = camEl.object3D.matrixWorld;
+  const v = new AFRAME.THREE.Vector3();
+
+  pins.forEach((pinEl, i) => {
+    const row = PHASE3_PIN_LAYOUT[i];
+    if (!row) return;
+    const { angleDeg, radius, y } = row;
+    const a = (angleDeg * Math.PI) / 180;
+    const lx = Math.sin(a) * radius;
+    const lz = -Math.cos(a) * radius;
+    v.set(lx, y, lz);
+    v.applyMatrix4(mw);
+    const x = v.x;
+    const yp = v.y;
+    const z = v.z;
+    pinEl.setAttribute('position', `${x} ${yp} ${z}`);
+    pinEl.setAttribute('animation__bob', {
+      property: 'position',
+      to: `${x} ${yp + 0.08} ${z}`,
+      dir: 'alternate',
+      dur: 1400 + i * 120,
+      easing: 'easeInOutSine',
+      loop: true,
+    });
+  });
+
+  const rayEl = scene.querySelector('[raycaster]');
+  const rayComp = rayEl && rayEl.components && rayEl.components.raycaster;
+  if (rayComp && typeof rayComp.setDirty === 'function') rayComp.setDirty();
+}
+
+function schedulePhase3PinRepositions(scene) {
+  repositionPhase3PinsFacingCamera(scene);
+  [32, 120, 280, 550].forEach((ms) => {
+    setTimeout(() => repositionPhase3PinsFacingCamera(scene), ms);
+  });
+}
+
 function spawnGemPinsInto(scene) {
-  // Cluster pins narrow & close so all three fit a phone FOV (~60°) and read large.
-  const layout = [
-    { angleDeg: -22, radius: 1.1, y:  0.15 },
-    { angleDeg:   0, radius: 1.2, y:  0.45 },
-    { angleDeg:  22, radius: 1.1, y: -0.15 },
-  ];
+  const worldRoot = scene.querySelector('#phase3-world-root') || scene;
 
   HIDDEN_GEMS.forEach((gem, i) => {
-    const { angleDeg, radius, y } = layout[i] || layout[0];
+    const { angleDeg, radius, y } = PHASE3_PIN_LAYOUT[i] || PHASE3_PIN_LAYOUT[0];
     const a = (angleDeg * Math.PI) / 180;
     const x = Math.sin(a) * radius;
     const z = -Math.cos(a) * radius;
@@ -723,6 +684,16 @@ function spawnGemPinsInto(scene) {
     pin.setAttribute('gem-pin', `id: ${gem.id}`);
     pin.setAttribute('position', `${x} ${y} ${z}`);
     pin.setAttribute('visible', 'true');
+    // A-Frame raycaster `objects:` only tests meshes in each entity's object3DMap (geometry
+    // component), not arbitrary child glTF nodes. Invisible sphere = tappable hit volume.
+    pin.setAttribute('geometry', { primitive: 'sphere', radius: 0.42 });
+    pin.setAttribute('material', {
+      shader: 'flat',
+      color: '#ffffff',
+      opacity: 0,
+      transparent: true,
+      depthWrite: false,
+    });
 
     // Floating animation: gentle vertical bob.
     pin.setAttribute('animation__bob', {
@@ -771,8 +742,13 @@ function spawnGemPinsInto(scene) {
       loop:     true,
     });
 
-    scene.appendChild(pin);
+    worldRoot.appendChild(pin);
   });
+
+  // Magic-window rotates the camera to the phone; raw world coords were authored for an
+  // identity camera, so pins often end up outside the frustum. Re-map layout through the
+  // camera matrix a few times as orientation settles (also covers denied gyro → no-op).
+  schedulePhase3PinRepositions(scene);
 
   console.log('[hidden-gem] phase 3: spawned pins', scene.querySelectorAll('.gem-pin').length);
 }
@@ -808,17 +784,15 @@ function showGemToast(msg) {
 }
 
 document.addEventListener('click', (e) => {
-  if (e.target.closest('[data-sim-collect]')) {
-    e.stopPropagation();
-    if (arPhase === 2) collectStamp();
-    return;
-  }
-  if (e.target.closest('[data-gem-close]')) {
+  const t = e.target instanceof Element ? e.target : e.target?.parentElement;
+  if (!t) return;
+  if (t.closest('[data-gem-close]')) {
+    e.preventDefault();
     e.stopPropagation();
     closeGemCard();
     return;
   }
-  if (e.target.closest('[data-gem-go]')) {
+  if (t.closest('[data-gem-go]')) {
     e.stopPropagation();
     console.log('[hidden-gem] go:', currentGemId);
     showGemToast('Heading there… (placeholder)');
@@ -832,6 +806,7 @@ function showARError(msg) {
 
 function stopAR() {
   arPhase = 0;
+  stopPhase2HuntIfRunning();
   stopAlignmentLoops();
   alignmentLocked = false;
   alignmentSustainStart = 0;
@@ -845,10 +820,6 @@ function stopAR() {
   if (phase3VideoStream) {
     try { phase3VideoStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
     phase3VideoStream = null;
-  }
-  if (phase3PickerBound) {
-    try { phase3PickerBound.canvas.removeEventListener('click', phase3PickerBound.handler); } catch (_) {}
-    phase3PickerBound = null;
   }
 
   if (arSceneEl) {
@@ -868,31 +839,9 @@ function stopAR() {
   setARPhaseUI(1);
 }
 
-// Tap on ar-scan screen in phase 2: collect if stamp is centred in view.
-const arScanEl = document.querySelector('[data-screen="ar-scan"]');
-if (arScanEl) arScanEl.addEventListener('click', (e) => {
-  if (e.target.closest('[data-back]') || e.target.closest('[data-go]') || e.target.closest('[data-ar-cam-retry]')) return;
-  if (arPhase !== 2 || !arSceneEl) return;
-
-  const stampEl  = document.getElementById('stamp-entity');
-  const cameraEl = arSceneEl.querySelector('[camera]');
-  if (!stampEl || !cameraEl) return;
-
-  const camera = cameraEl.getObject3D('camera');
-  if (!camera) return;
-
-  const worldPos  = new AFRAME.THREE.Vector3();
-  stampEl.object3D.getWorldPosition(worldPos);
-  const projected = worldPos.clone().project(camera);
-  const inView =
-    Math.abs(projected.x) < 0.48 &&
-    Math.abs(projected.y) < 0.55 &&
-    projected.z > -1 &&
-    projected.z < 1;
-  if (inView) collectStamp();
-});
-
 function collectStamp() {
+  // Release Phase 2's camera + GL resources before Phase 3 reopens its own video.
+  stopPhase2HuntIfRunning();
   transitionToPhase3();
 }
 

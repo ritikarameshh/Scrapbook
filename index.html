@@ -94,14 +94,9 @@
             <p class="ar-hint outline-hint" id="outline-hint">Match the outline to what you see</p>
           </div>
 
-          <!-- Phase 2: hunt the stamp -->
+          <!-- Phase 2: stamp hunt — DOM is mounted by phase2-hunt.js inside the host. -->
           <div id="ar-phase-2" class="ar-phase" hidden>
-            <p class="ar-hunt-hint">Move around — the stamp is hiding near this building. Follow the arrow.</p>
-            <div class="compass-strip">
-              <span class="compass-label">Stamp direction</span>
-              <span class="compass-arrow">↑</span>
-            </div>
-            <button type="button" class="btn btn-ghost ar-sim-btn" data-sim-collect>Simulate find stamp</button>
+            <div id="ar-phase-2-host"></div>
           </div>
 
           <!-- Phase 3: hidden-gem suggestions -->
@@ -112,19 +107,17 @@
             </header>
 
             <div id="gem-detail-card" class="gem-detail-card" hidden>
-              <button class="gem-detail-close" data-gem-close aria-label="Close">✕</button>
+              <button type="button" class="gem-detail-close" data-gem-close aria-label="Close detail card">✕</button>
               <p class="gem-detail-type" data-gem-type></p>
               <h3 class="gem-detail-title" data-gem-title></h3>
               <p class="gem-detail-meta"><span data-gem-walk></span></p>
-              <button class="btn btn-primary btn-block" data-gem-go>Go →</button>
+              <button type="button" class="btn btn-primary btn-block" data-gem-go>Go →</button>
             </div>
 
             <div id="gem-toast" class="gem-toast" hidden></div>
           </div>
         </div>
 
-        <!-- Tap prompt: shown when stamp is centred in view -->
-        <div id="tap-to-collect" hidden>Tap to collect the stamp ✦</div>
       </section>
 
       <!-- ============ STAMP — FACT + TASK ============ -->
@@ -435,6 +428,16 @@
   <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
   <!-- MindAR image + A-Frame integration -->
   <script src="mindar-image-aframe.prod.js"></script>
+  <!-- Phase 2 stamp-hunt deps: MediaPipe Hands (global) + Three.js importmap -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
   <script src="script.js"></script>
 </body>
 </html>
