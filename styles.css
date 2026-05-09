@@ -533,7 +533,12 @@ p { margin: 0; }
   100% { box-shadow: 0 0 0 28px rgba(157,181,154,0); }
 }
 
-/* ---- Phase 1 (alternate): outline alignment ---- */
+/* ---- Phase 1: MindAR landmark (hide outline chrome) / Phase 4: outline ---- */
+#ar-phase-outline.landmark-scan-mode .outline-stage {
+  display: none;
+}
+
+/* ---- Phase 4: outline alignment (Sobel validator) ---- */
 .outline-stage {
   position: absolute;
   inset: 0;

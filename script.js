@@ -104,8 +104,17 @@ document.addEventListener('click', (e) => {
 });
 
 // ============ AR — MindAR A-Frame image tracking ============
-let arPhase   = 0; // 0 = idle | 1 = scanning | 2 = hunting
+// arPhase: 0 idle | 1 MindAR landmark image targets | 2 stamp hunt | 3 gem pins | 4 Sobel outline → hunt
+let arPhase   = 0;
 let arSceneEl = null;
+
+// Phase 1: compiled targets from ritika/landmark-detection (Met reference images).
+const LANDMARK_MIND_SRC = './met-detection/targets.mind';
+// Phase 4 (and MindAR video passthrough): any valid .mind so the pipeline starts (not used for tracking there).
+const OUTLINE_SESSION_MIND_SRC = './Assets/targets.mind';
+
+let phase1LandmarkMatched      = false;
+let pendingSecondSpotCompletion = false;
 
 const ALIGNMENT_THRESHOLD    = 0.57;   // tolerant IoU is more generous; 0.50 ≈ "roughly aligned"
 const ALIGNMENT_SUSTAIN_MS   = 1000;
@@ -124,6 +133,9 @@ const HIDDEN_GEMS = [
   { id: 'gallery', title: 'A gallery where you can hear whispers across the room', type: 'Gallery',      walkMin: 7,  color: '#3F5532' },
   { id: 'install', title: 'A hidden away art installation',                        type: 'Art install.', walkMin: 11, color: '#E26E5F' },
 ];
+// Phase 4 entry: second pin in the list (user heads to this “next” spot for outline matching).
+const SECOND_SPOT_GEM_ID = HIDDEN_GEMS[1].id;
+
 // Local offsets in camera space (camera looks down -Z); remapped through matrixWorld when gyro is on.
 const PHASE3_PIN_LAYOUT = [
   { angleDeg: -22, radius: 1.1, y:  0.15 },
@@ -205,11 +217,21 @@ function resetOutlineHint() {
   }
 }
 
+function resetLandmarkScanHint() {
+  const hint = document.querySelector('#ar-phase-outline .ar-hint');
+  if (hint) {
+    hint.classList.remove('ar-hint-insecure');
+    hint.textContent =
+      'Point the camera at the printed landmark (demo uses The Met targets from ritika/landmark-detection)';
+  }
+}
+
 function startAR() {
   const container = document.getElementById('ar-scan-container');
   if (!container) return;
 
-  resetOutlineHint();
+  resetLandmarkScanHint();
+  phase1LandmarkMatched = false;
 
   if (typeof AFRAME === 'undefined') {
     showARError('AR library failed to load. Check your network (A-Frame CDN) and refresh.');
@@ -225,7 +247,7 @@ function startAR() {
   requestAnimationFrame(() => {
     const active = document.querySelector('.screen.active');
     if (!active || active.dataset.screen !== 'ar-scan') return;
-    mountOutlineSceneInto(container);
+    mountLandmarkDetectionScene(container);
 
     // Browsers treat http://192.168… as insecure — camera will fail, but AR still opens.
     if (!window.isSecureContext) {
@@ -239,7 +261,79 @@ function startAR() {
   });
 }
 
-// ---- Hidden-gem outline-alignment Phase 1 ----------------------------------
+// ---- Phase 1: MindAR landmark (image targets) --------------------------------
+
+function onLandmarkImageFound() {
+  if (arPhase !== 1 || phase1LandmarkMatched) return;
+  phase1LandmarkMatched = true;
+
+  const hint = document.getElementById('outline-hint');
+  if (hint) hint.textContent = 'Landmark found ✓';
+
+  try { navigator.vibrate?.(80); } catch (_) {}
+
+  setTimeout(() => transitionToPhase2({ secondSpotStamp: false }), 420);
+}
+
+function mountLandmarkDetectionScene(container) {
+  alignmentLocked = false;
+  alignmentSustainStart = 0;
+  stopAlignmentLoops();
+
+  const stage = document.querySelector('#ar-phase-outline .outline-stage');
+  if (stage) stage.dataset.state = 'idle';
+
+  // One anchor per compiled target index (met-detection/targets.mind).
+  // met-detection/targets.mind is compiled with a single image target (see met-detection/script.js).
+  const landmarkAnchorsHtml =
+    '<a-entity mindar-image-target="targetIndex: 0"></a-entity>';
+
+  container.innerHTML = `
+    <a-scene id="ar-scene" embedded
+      mindar-image="imageTargetSrc: ${LANDMARK_MIND_SRC}; uiScanning: no; uiLoading: no; uiError: no;"
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+      renderer="alpha: true"
+      style="position:absolute;top:0;left:0;width:100%;height:100%;">
+      <a-assets></a-assets>
+      <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+      ${landmarkAnchorsHtml}
+    </a-scene>`;
+
+  arSceneEl = document.getElementById('ar-scene');
+  if (!arSceneEl) return;
+
+  arSceneEl.addEventListener(
+    'renderstart',
+    () => {
+      hideARCameraError();
+      if (arSceneEl?.renderer) arSceneEl.renderer.setClearColor(0x000000, 0);
+      const anchors = arSceneEl.querySelectorAll('[mindar-image-target]');
+      anchors.forEach((el) => {
+        el.addEventListener('targetFound', onLandmarkImageFound);
+      });
+    },
+    { once: true },
+  );
+
+  arSceneEl.addEventListener('arError', (e) => {
+    const code = e.detail?.error ?? '';
+    let sub = 'Tap “Enable camera”, choose Allow, and use Safari/Chrome.';
+    if (!window.isSecureContext) {
+      sub = 'Serve the app over HTTPS or localhost.';
+    } else if (code === 'VIDEO_FAIL') {
+      sub = 'Try “Enable camera” again, open in Safari, or use a real device.';
+    } else if (code === 'INVALID_TARGET_URL' || code === 'TARGET_LOAD_FAIL') {
+      sub = 'Landmark targets missing: met-detection/targets.mind';
+    }
+    showARCameraError(sub);
+  });
+
+  setARPhaseUI(1);
+}
+
+// ---- Phase 4: Sobel outline alignment (second spot) -------------------------
 
 let alignmentTickerId      = null;
 let alignmentSustainStart  = 0;
@@ -247,15 +341,13 @@ let alignmentLocked        = false;
 let outlineMaskCanvas      = null;   // pre-binarized outline edge mask, used by visual validator
 let visualSampleCanvas     = null;   // reused per tick to avoid GC churn
 
-function mountOutlineSceneInto(container) {
+function mountOutlineAlignmentScene(container) {
   prepareOutlineUI(OUTLINE_SRC);
 
-  // MindAR provides the camera passthrough (<video> + alpha-clear renderer).
-  // No image-target anchors are used — alignment is handled entirely by the
-  // visual validator (Sobel edges of the camera ↔ outline mask IoU).
+  // MindAR provides the camera passthrough; Sobel / outline IoU runs in JS (no image-target anchors).
   container.innerHTML = `
     <a-scene id="ar-scene" embedded
-      mindar-image="imageTargetSrc: ./Assets/targets-combined.mind; uiScanning: no; uiLoading: no; uiError: no;"
+      mindar-image="imageTargetSrc: ${OUTLINE_SESSION_MIND_SRC}; uiScanning: no; uiLoading: no; uiError: no;"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       renderer="alpha: true"
@@ -271,7 +363,7 @@ function mountOutlineSceneInto(container) {
   arSceneEl.addEventListener('renderstart', () => {
     hideARCameraError();
     if (arSceneEl?.renderer) arSceneEl.renderer.setClearColor(0x000000, 0);
-    startVisualAlignment();
+    if (arPhase === 4) startVisualAlignment();
   }, { once: true });
 
   arSceneEl.addEventListener('arError', (e) => {
@@ -282,12 +374,12 @@ function mountOutlineSceneInto(container) {
     } else if (code === 'VIDEO_FAIL') {
       sub = 'Try “Enable camera” again, open in Safari, or use a real device.';
     } else if (code === 'INVALID_TARGET_URL' || code === 'TARGET_LOAD_FAIL') {
-      sub = 'targets-combined.mind not found in Assets/.';
+      sub = 'MindAR outline session needs a valid .mind in Assets/ (e.g. targets.mind).';
     }
     showARCameraError(sub);
   });
 
-  setARPhaseUI(1);
+  setARPhaseUI(4);
 }
 
 function prepareOutlineUI(outlineSrc) {
@@ -313,7 +405,7 @@ function prepareOutlineUI(outlineSrc) {
 // Apply a single alignment score (0..1, where 0 = perfect) to the UI and
 // fire onAlignmentLocked() once it's been below threshold for the sustain window.
 function applyAlignmentScore(error) {
-  if (alignmentLocked || arPhase !== 1) return;
+  if (alignmentLocked || arPhase !== 4) return;
 
   const stage   = document.querySelector('#ar-phase-outline .outline-stage');
   const scoreEl = document.getElementById('align-score');
@@ -342,7 +434,7 @@ function applyAlignmentScore(error) {
 }
 
 function onAlignmentLocked() {
-  if (alignmentLocked) return;
+  if (alignmentLocked || arPhase !== 4) return;
   alignmentLocked = true;
 
   stopAlignmentLoops();
@@ -352,8 +444,8 @@ function onAlignmentLocked() {
 
   try { navigator.vibrate?.(80); } catch (_) {}
 
-  // Visual validator locked — hand off to the phase 2 stamp-hunt module.
-  setTimeout(() => transitionToPhase2(), 420);
+  // Outline locked at second spot — stamp hunt again, then finish flow on collect.
+  setTimeout(() => transitionToPhase2({ secondSpotStamp: true }), 420);
 }
 
 function stopAlignmentLoops() {
@@ -382,7 +474,7 @@ function startVisualAlignment() {
   // re-query it every tick instead of bailing out of the whole loop. Once the
   // video appears and outlineMaskCanvas finishes building, scoring kicks in.
   alignmentTickerId = setInterval(() => {
-    if (alignmentLocked || arPhase !== 1) return;
+    if (alignmentLocked || arPhase !== 4) return;
     const v = arSceneEl?.querySelector('video') || document.querySelector('#ar-scan-container video');
     if (!v || v.readyState < 2 || !outlineMaskCanvas) return;
 
@@ -508,10 +600,14 @@ function iouScore(a, b) {
 
 let phase2HuntModule = null;
 
-async function transitionToPhase2() {
-  // Tear down Phase 1's MindAR scene first — phase2-hunt.js owns its own
+async function transitionToPhase2(options = {}) {
+  const { secondSpotStamp = false } = options;
+
+  // Tear down MindAR / outline scene first — phase2-hunt.js owns its own
   // camera + Three.js scene and re-requests getUserMedia.
   teardownMindARScene();
+
+  if (secondSpotStamp) pendingSecondSpotCompletion = true;
 
   arPhase = 2;
   setARPhaseUI(2);
@@ -538,12 +634,15 @@ function stopPhase2HuntIfRunning() {
 }
 
 function setARPhaseUI(phase) {
-  const p1Out    = document.getElementById('ar-phase-outline');
-  const p2       = document.getElementById('ar-phase-2');
-  const p3       = document.getElementById('ar-phase-3');
-  if (p1Out)    p1Out.hidden = (phase !== 1);
-  if (p2)       p2.hidden    = (phase !== 2);
-  if (p3)       p3.hidden    = (phase !== 3);
+  const p1Out = document.getElementById('ar-phase-outline');
+  const p2 = document.getElementById('ar-phase-2');
+  const p3 = document.getElementById('ar-phase-3');
+  if (p1Out) {
+    p1Out.hidden = phase !== 1 && phase !== 4;
+    p1Out.classList.toggle('landmark-scan-mode', phase === 1);
+  }
+  if (p2) p2.hidden = phase !== 2;
+  if (p3) p3.hidden = phase !== 3;
   // Bottom detail sheet: only opened from a pin tap (`openGemCard`); clear whenever AR phase UI changes.
   closeGemCard();
 }
@@ -563,9 +662,36 @@ function teardownMindARScene() {
   if (container) container.innerHTML = '';
 }
 
+function beginPhase4OutlineFlow() {
+  resetOutlineHint();
+
+  if (phase3VideoStream) {
+    try { phase3VideoStream.getTracks().forEach((tr) => tr.stop()); } catch (_) {}
+    phase3VideoStream = null;
+  }
+  if (arSceneEl) {
+    try { arSceneEl.systems?.['mindar-image-system']?.stop(); } catch (_) {}
+  }
+  arSceneEl = null;
+
+  const container = document.getElementById('ar-scan-container');
+  if (!container) return;
+  container.innerHTML = '';
+
+  arPhase = 4;
+  alignmentLocked = false;
+  alignmentSustainStart = 0;
+  stopAlignmentLoops();
+
+  requestAnimationFrame(() => {
+    const active = document.querySelector('.screen.active');
+    if (!active || active.dataset.screen !== 'ar-scan') return;
+    mountOutlineAlignmentScene(container);
+  });
+}
+
 function transitionToPhase3() {
-  // MindAR's image-tracking renderer is unstable here (broken targets-combined.mind),
-  // so for Phase 3 we swap to a plain A-Frame scene with a manual camera-feed video.
+  // Phase 3 uses a plain A-Frame scene with a manual camera-feed video (no MindAR targets).
   // iOS 13+: device orientation must be requested from a user gesture; collectStamp() calls
   // us synchronously from the ar-scan click handler, so this runs inside that gesture.
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
@@ -794,6 +920,11 @@ document.addEventListener('click', (e) => {
   }
   if (t.closest('[data-gem-go]')) {
     e.stopPropagation();
+    if (currentGemId === SECOND_SPOT_GEM_ID && arPhase === 3) {
+      closeGemCard();
+      beginPhase4OutlineFlow();
+      return;
+    }
     console.log('[hidden-gem] go:', currentGemId);
     showGemToast('Heading there… (placeholder)');
   }
@@ -806,6 +937,8 @@ function showARError(msg) {
 
 function stopAR() {
   arPhase = 0;
+  phase1LandmarkMatched = false;
+  pendingSecondSpotCompletion = false;
   stopPhase2HuntIfRunning();
   stopAlignmentLoops();
   alignmentLocked = false;
@@ -840,8 +973,13 @@ function stopAR() {
 }
 
 function collectStamp() {
-  // Release Phase 2's camera + GL resources before Phase 3 reopens its own video.
   stopPhase2HuntIfRunning();
+  if (pendingSecondSpotCompletion) {
+    pendingSecondSpotCompletion = false;
+    stopAR();
+    go('book');
+    return;
+  }
   transitionToPhase3();
 }
 
