@@ -148,7 +148,8 @@ function transitionToPhase3() {
   phaseLandmark.deactivateLandmarkPhase(sceneEl);
   phaseOutline.deactivateOutlinePhase();
 
-  mindarHost.setMindARCameraLookControlsEnabled(sceneEl, true);
+  // Phase 3 uses its own magic-window scene (see ar-phase3-magic-window.js), not MindAR’s camera.
+  mindarHost.setMindARCameraLookControlsEnabled(sceneEl, false);
 
   setArPhase(3);
   setARPhaseUI(3);

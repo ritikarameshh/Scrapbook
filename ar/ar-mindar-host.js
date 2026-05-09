@@ -73,6 +73,14 @@ export function mountPersistentMindARScene(container, opts = {}) {
   });
 }
 
+/** Hide/show the MindAR root scene (camera keeps running; used when Phase 3 stacks its own scene). */
+export function setMindARSceneVisibility(sceneEl, visible) {
+  const el = sceneEl || document.getElementById('ar-scene');
+  if (!el) return;
+  el.style.visibility = visible ? '' : 'hidden';
+  el.style.pointerEvents = visible ? '' : 'none';
+}
+
 export function setMindARCameraLookControlsEnabled(sceneEl, enabled) {
   let cam = sceneEl?.querySelector('#ar-flow-camera');
   if (!cam && sceneEl?.camera?.el) cam = sceneEl.camera.el;

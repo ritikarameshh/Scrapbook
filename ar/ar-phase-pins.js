@@ -1,84 +1,30 @@
 /**
- * Phase 3 — gem “pins” as screen-space DOM on top of the MindAR camera pass-through.
- * MindAR’s WebGL compositor often does not draw arbitrary A-Frame entities over the video feed,
- * so 3D pins were invisible; HTML pins in #gem-pin-layer stay in the UI stack reliably.
+ * Phase 3 — gem card UI + delegates 3D “floating” pins to ar-phase3-magic-window.js
+ * (plain A-Frame magic window on a mirrored MindAR stream).
  */
 
-import { HIDDEN_GEMS, PHASE3_PIN_LAYOUT } from './ar-config.js';
-import { getArPhase } from './session-state.js';
+import { HIDDEN_GEMS } from './ar-config.js';
+import * as mindarHost from './ar-mindar-host.js';
+import * as phase3Magic from './ar-phase3-magic-window.js';
 
 let currentGemId = null;
 let gemToastTimer = null;
-let domPinClickBound = false;
 
 export function getCurrentGemId() {
   return currentGemId;
 }
 
-function clearDomPinLayer() {
-  const layer = document.getElementById('gem-pin-layer');
-  if (layer) {
-    layer.innerHTML = '';
-    layer.setAttribute('aria-hidden', 'true');
-  }
-}
-
-function clearAframePinsIfAny(sceneEl) {
-  if (!sceneEl) return;
-  sceneEl.querySelectorAll('.gem-pin').forEach((n) => n.parentNode?.removeChild(n));
-}
-
-function bindDomPinLayerOnce() {
-  if (domPinClickBound) return;
-  const layer = document.getElementById('gem-pin-layer');
-  if (!layer) return;
-  domPinClickBound = true;
-  layer.addEventListener('click', (e) => {
-    const pin = e.target.closest('.gem-pin-dom');
-    if (!pin || getArPhase() !== 3) return;
-    e.stopPropagation();
-    openGemCard(pin.dataset.gemId);
-  });
-}
-
-/**
- * @param {import('aframe').Entity | null} sceneEl — optional; clears any legacy A-Frame pins
- */
+/** @param {import('aframe').Entity | null} sceneEl */
 export function activatePinsPhase(sceneEl) {
-  bindDomPinLayerOnce();
-  clearAframePinsIfAny(sceneEl);
-  clearDomPinLayer();
-
-  const layer = document.getElementById('gem-pin-layer');
-  if (!layer) return;
-
-  layer.setAttribute('aria-hidden', 'false');
-
-  HIDDEN_GEMS.forEach((gem, i) => {
-    const row = PHASE3_PIN_LAYOUT[i] || PHASE3_PIN_LAYOUT[0];
-    const { angleDeg, radius } = row;
-    const rad = (angleDeg * Math.PI) / 180;
-    // Map authored polar layout (radius ~1.1m) to screen vmin fan in front of the user.
-    const spread = 34 * radius;
-    const xVmin = Math.sin(rad) * spread;
-    const yVmin = -Math.cos(rad) * spread * 0.65 + 10;
-
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'gem-pin-dom';
-    btn.dataset.gemId = gem.id;
-    btn.setAttribute('aria-label', `${gem.type}: ${gem.title}`);
-    btn.style.left = `calc(50% + ${xVmin.toFixed(2)}vmin)`;
-    btn.style.top = `calc(54% + ${yVmin.toFixed(2)}vmin)`;
-    btn.style.background = gem.color;
-    layer.appendChild(btn);
-  });
+  const container = document.getElementById('ar-scan-container');
+  const video = mindarHost.getMindARVideoFromScene(sceneEl);
+  phase3Magic.mount(container, video, sceneEl);
 }
 
 /** @param {import('aframe').Entity | null} sceneEl */
 export function deactivatePinsPhase(sceneEl) {
-  clearDomPinLayer();
-  clearAframePinsIfAny(sceneEl);
+  const container = document.getElementById('ar-scan-container');
+  phase3Magic.unmount(container, sceneEl);
 }
 
 export function openGemCard(id) {

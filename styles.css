@@ -1344,36 +1344,29 @@ p { margin: 0; }
   opacity: 0.78;
 }
 
-/* Screen-space gem pins (Phase 3) — above camera pass-through, tappable */
-.gem-pin-layer {
+/* Phase 3 magic-window stack (mirrored video + plain A-Frame) — lives in #ar-scan-container */
+.phase3-magic-stack {
   position: absolute;
   inset: 0;
-  z-index: 6;
-  pointer-events: none;
-}
-.gem-pin-dom {
-  position: absolute;
-  width: min(15vmin, 64px);
-  height: min(15vmin, 64px);
-  margin: 0;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
+  z-index: 10;
   pointer-events: auto;
-  cursor: pointer;
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.9),
-    0 10px 28px rgba(0, 0, 0, 0.35);
-  transition: transform 0.15s ease-out, filter 0.15s ease-out;
-  animation: gem-pin-pulse 1.5s ease-in-out infinite alternate;
+  overflow: hidden;
 }
-.gem-pin-dom:active {
-  transform: translate(-50%, -50%) scale(0.92);
+.phase3-magic-stack .phase3-mw-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
+  background: #000;
 }
-@keyframes gem-pin-pulse {
-  from { filter: brightness(1); }
-  to   { filter: brightness(1.12); }
+.phase3-magic-stack #phase3-mw-scene {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 1;
 }
 
 .gem-detail-card {
