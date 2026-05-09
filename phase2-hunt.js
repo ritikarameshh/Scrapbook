@@ -102,6 +102,8 @@ export async function startPhase2Hunt({
   onError,
   stampUrl = './Assets/rodeo_coin.gltf',
   stampName = 'The Mystic Orb',
+  /** When set, reuse this element’s stream (e.g. MindAR video) instead of opening a new camera. */
+  sharedVideoElement = null,
   funFacts = [
     'This stamp has been waiting for the right traveler.',
     'Locals say the building above hides a story for every window.',
@@ -122,7 +124,10 @@ export async function startPhase2Hunt({
   };
 
   const $ = (sel) => host.querySelector(sel);
-  const cameraVideo   = $('.p2-cameraVideo');
+  const tplCameraVideo = $('.p2-cameraVideo');
+  const ownsCameraStream = !sharedVideoElement;
+  const captureVideo = sharedVideoElement || tplCameraVideo;
+  if (sharedVideoElement) tplCameraVideo.classList.add('p2-hidden');
   const threeCanvas   = $('.p2-threeCanvas');
   const statusBar     = $('.p2-statusBar');
   const compassHint   = $('.p2-compassHint');
@@ -304,10 +309,24 @@ export async function startPhase2Hunt({
     });
   }
   async function attachCameraStream(streamPromise) {
+    if (!ownsCameraStream) {
+      try {
+        await captureVideo.play();
+        return captureVideo.readyState >= 2;
+      } catch (err) {
+        console.error('[phase2-hunt] shared video error:', err);
+        showError(
+          'Camera not ready',
+          'The AR camera preview is not available yet. Close AR and try again.',
+          null,
+        );
+        return false;
+      }
+    }
     try {
       mediaStream = await streamPromise;
-      cameraVideo.srcObject = mediaStream;
-      await cameraVideo.play();
+      captureVideo.srcObject = mediaStream;
+      await captureVideo.play();
       return true;
     } catch (err) {
       console.error('[phase2-hunt] Camera error:', err);
@@ -432,7 +451,7 @@ export async function startPhase2Hunt({
 
   function startOpticalFlow() {
     if (opticalFlowActive) return;
-    if (!cameraVideo || cameraVideo.readyState < 2) {
+    if (!captureVideo || captureVideo.readyState < 2) {
       setTimeout(startOpticalFlow, 100);
       return;
     }
@@ -449,7 +468,7 @@ export async function startPhase2Hunt({
     _ofTick();
   }
   function _ofGrabLuma(target) {
-    _ofCtx.drawImage(cameraVideo, 0, 0, OF_W, OF_H);
+    _ofCtx.drawImage(captureVideo, 0, 0, OF_W, OF_H);
     const data = _ofCtx.getImageData(0, 0, OF_W, OF_H).data;
     for (let i = 0, j = 0; i < data.length; i += 4, j++) {
       target[j] = (data[i] * 77 + data[i + 1] * 151 + data[i + 2] * 28) >> 8;
@@ -479,7 +498,7 @@ export async function startPhase2Hunt({
   function _ofTick() {
     if (!opticalFlowActive) return;
     _ofRaf = requestAnimationFrame(_ofTick);
-    if (!cameraVideo || cameraVideo.readyState < 2) return;
+    if (!captureVideo || captureVideo.readyState < 2) return;
     const now = performance.now();
     if (now - _ofLastMs < 33) return;
     _ofLastMs = now;
@@ -994,8 +1013,8 @@ export async function startPhase2Hunt({
       showManualFallback();
     }
     frameToggle = (frameToggle + 1) % 2;
-    if (mediapipeReady && hands && cameraVideo.readyState >= 2 && frameToggle === 0) {
-      hands.send({ image: cameraVideo }).catch((err) => {
+    if (mediapipeReady && hands && captureVideo.readyState >= 2 && frameToggle === 0) {
+      hands.send({ image: captureVideo }).catch((err) => {
         if (!mediapipeFailed) {
           console.error('[phase2-hunt] MediaPipe send error:', err);
           mediapipeFailed = true;
@@ -1163,10 +1182,10 @@ export async function startPhase2Hunt({
   let stopped = false;
   hideError();
   loadingScreen.classList.remove('p2-hidden');
-  loadingText.textContent = 'Requesting camera…';
+  loadingText.textContent = ownsCameraStream ? 'Requesting camera…' : 'Syncing with AR camera…';
 
   const orientPerm = requestOrientationPermission();
-  const camStream  = requestCameraStream();
+  const camStream = ownsCameraStream ? requestCameraStream() : Promise.resolve(null);
 
   const stop = () => {
     if (stopped) return;
@@ -1177,9 +1196,13 @@ export async function startPhase2Hunt({
     opticalFlowActive = false;
     try { hands && hands.close && hands.close(); } catch (_) {}
     hands = null;
-    try { mediaStream && mediaStream.getTracks().forEach(t => t.stop()); } catch (_) {}
+    if (ownsCameraStream && mediaStream) {
+      try { mediaStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+    }
     mediaStream = null;
-    try { cameraVideo.srcObject = null; } catch (_) {}
+    if (ownsCameraStream) {
+      try { captureVideo.srcObject = null; } catch (_) {}
+    }
     for (const { target, ev, fn, opts } of winListeners) {
       try { target.removeEventListener(ev, fn, opts); } catch (_) {}
     }

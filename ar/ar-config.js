@@ -1,0 +1,31 @@
+/** Static AR flow configuration */
+
+export const LANDMARK_MIND_SRC = './met-detection/targets.mind';
+
+export const OUTLINE_SRC = 'Assets/HiddenGem.auto.png';
+
+export const HIDDEN_GEMS = [
+  { id: 'pub', title: 'A 100 year old pub', type: 'Pub', walkMin: 4, color: '#8C5A1A' },
+  {
+    id: 'gallery',
+    title: 'A gallery where you can hear whispers across the room',
+    type: 'Gallery',
+    walkMin: 7,
+    color: '#3F5532',
+  },
+  {
+    id: 'install',
+    title: 'A hidden away art installation',
+    type: 'Art install.',
+    walkMin: 11,
+    color: '#E26E5F',
+  },
+];
+
+export const SECOND_SPOT_GEM_ID = HIDDEN_GEMS[1].id;
+
+export const PHASE3_PIN_LAYOUT = [
+  { angleDeg: -22, radius: 1.1, y: 0.15 },
+  { angleDeg: 0, radius: 1.2, y: 0.45 },
+  { angleDeg: 22, radius: 1.1, y: -0.15 },
+];
