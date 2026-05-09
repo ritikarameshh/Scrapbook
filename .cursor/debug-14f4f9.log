@@ -1,0 +1,44 @@
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:body-tail","message":"classic script ran (DOM parsed)","data":{"readyState":"loading","startBtn":true},"timestamp":1778341682808}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:module-top","message":"module body running (imports OK)","data":{"THREE":true,"GLTFLoader":true,"Hands":"function"},"timestamp":1778341682905}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:post-bind","message":"startBtn handler bound successfully","data":{},"timestamp":1778341682908}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:pre-bind","message":"about to bind startBtn click handler","data":{"startBtnExists":true,"startBtnTag":"BUTTON","startScreenHidden":false},"timestamp":1778341682908}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:body-tail","message":"classic script ran (DOM parsed)","data":{"readyState":"loading","startBtn":true},"timestamp":1778341690568}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:module-top","message":"module body running (imports OK)","data":{"THREE":true,"GLTFLoader":true,"Hands":"function"},"timestamp":1778341691247}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:pre-bind","message":"about to bind startBtn click handler","data":{"startBtnExists":true,"startBtnTag":"BUTTON","startScreenHidden":false},"timestamp":1778341691247}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:post-bind","message":"startBtn handler bound successfully","data":{},"timestamp":1778341691247}
+{"sessionId":"14f4f9","hypothesisId":"C","location":"index.html:startBtn.click","message":"click handler fired","data":{"type":"click","isTrusted":true,"target":"startBtn"},"timestamp":1778341692639}
+{"sessionId":"14f4f9","hypothesisId":"D","location":"index.html:boot.entry","message":"boot() called","data":{"state":"INIT"},"timestamp":1778341692644}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:body-tail","message":"classic script ran (DOM parsed)","data":{"readyState":"loading","startBtn":true},"timestamp":1778341695079}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:module-top","message":"module body running (imports OK)","data":{"THREE":true,"GLTFLoader":true,"Hands":"function"},"timestamp":1778341695226}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:pre-bind","message":"about to bind startBtn click handler","data":{"startBtnExists":true,"startBtnTag":"BUTTON","startScreenHidden":false},"timestamp":1778341695227}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:post-bind","message":"startBtn handler bound successfully","data":{},"timestamp":1778341695227}
+{"sessionId":"14f4f9","hypothesisId":"C","location":"index.html:startBtn.click","message":"click handler fired","data":{"type":"click","isTrusted":true,"target":"startBtn"},"timestamp":1778341695987}
+{"sessionId":"14f4f9","hypothesisId":"D","location":"index.html:boot.entry","message":"boot() called","data":{"state":"INIT"},"timestamp":1778341695988}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:body-tail","message":"classic script ran (DOM parsed)","data":{"readyState":"loading","startBtn":true},"timestamp":1778341699515}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:module-top","message":"module body running (imports OK)","data":{"THREE":true,"GLTFLoader":true,"Hands":"function"},"timestamp":1778341699631}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:pre-bind","message":"about to bind startBtn click handler","data":{"startBtnExists":true,"startBtnTag":"BUTTON","startScreenHidden":false},"timestamp":1778341699632}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:post-bind","message":"startBtn handler bound successfully","data":{},"timestamp":1778341699632}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:body-tail","message":"classic script ran (DOM parsed)","data":{"readyState":"loading","startBtn":true},"timestamp":1778341700650}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:module-top","message":"module body running (imports OK)","data":{"THREE":true,"GLTFLoader":true,"Hands":"function"},"timestamp":1778341700677}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:pre-bind","message":"about to bind startBtn click handler","data":{"startBtnExists":true,"startBtnTag":"BUTTON","startScreenHidden":false},"timestamp":1778341700677}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:post-bind","message":"startBtn handler bound successfully","data":{},"timestamp":1778341700677}
+{"sessionId":"14f4f9","hypothesisId":"C","location":"index.html:startBtn.click","message":"click handler fired","data":{"type":"click","isTrusted":true,"target":"startBtn"},"timestamp":1778341701669}
+{"sessionId":"14f4f9","hypothesisId":"D","location":"index.html:boot.entry","message":"boot() called","data":{"state":"INIT"},"timestamp":1778341701669}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:body-tail","message":"classic script ran (DOM parsed)","data":{"readyState":"loading","startBtn":true},"timestamp":1778341703427}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:module-top","message":"module body running (imports OK)","data":{"THREE":true,"GLTFLoader":true,"Hands":"function"},"timestamp":1778341703509}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:pre-bind","message":"about to bind startBtn click handler","data":{"startBtnExists":true,"startBtnTag":"BUTTON","startScreenHidden":false},"timestamp":1778341703509}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:post-bind","message":"startBtn handler bound successfully","data":{},"timestamp":1778341703509}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:body-tail","message":"classic script ran (DOM parsed)","data":{"readyState":"loading","startBtn":true},"timestamp":1778341704937}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:module-top","message":"module body running (imports OK)","data":{"THREE":true,"GLTFLoader":true,"Hands":"function"},"timestamp":1778341704963}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:pre-bind","message":"about to bind startBtn click handler","data":{"startBtnExists":true,"startBtnTag":"BUTTON","startScreenHidden":false},"timestamp":1778341704963}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:post-bind","message":"startBtn handler bound successfully","data":{},"timestamp":1778341704963}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:body-tail","message":"classic script ran (DOM parsed)","data":{"readyState":"loading","startBtn":true},"timestamp":1778341912165}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:module-top","message":"module body running (imports OK)","data":{"THREE":true,"GLTFLoader":true,"Hands":"function"},"timestamp":1778341912591}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:post-bind","message":"startBtn handler bound successfully","data":{},"timestamp":1778341912597}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:pre-bind","message":"about to bind startBtn click handler","data":{"startBtnExists":true,"startBtnTag":"BUTTON","startScreenHidden":false},"timestamp":1778341912597}
+{"sessionId":"14f4f9","hypothesisId":"C","location":"index.html:startBtn.click","message":"click handler fired","data":{"type":"click","isTrusted":true,"target":"startBtn"},"timestamp":1778341922095}
+{"sessionId":"14f4f9","hypothesisId":"D","location":"index.html:boot.entry","message":"boot() called","data":{"state":"INIT"},"timestamp":1778341922112}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:body-tail","message":"classic script ran (DOM parsed)","data":{"readyState":"loading","startBtn":true},"timestamp":1778341934994}
+{"sessionId":"14f4f9","hypothesisId":"A","location":"index.html:module-top","message":"module body running (imports OK)","data":{"THREE":true,"GLTFLoader":true,"Hands":"function"},"timestamp":1778341935085}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:pre-bind","message":"about to bind startBtn click handler","data":{"startBtnExists":true,"startBtnTag":"BUTTON","startScreenHidden":false},"timestamp":1778341935088}
+{"sessionId":"14f4f9","hypothesisId":"B","location":"index.html:post-bind","message":"startBtn handler bound successfully","data":{},"timestamp":1778341935088}

@@ -1,0 +1,2226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+/>
+<meta name="theme-color" content="#0a0014" />
+<title>Stamp Hunt — The Mystic Orb</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+  rel="stylesheet"
+/>
+
+<style>
+  :root {
+    --accent-purple: #a855f7;
+    --accent-gold: #fbbf24;
+    --accent-pink: #ec4899;
+    --bg-deep: #0a0014;
+    --glass: rgba(20, 8, 40, 0.55);
+    --glass-stroke: rgba(168, 85, 247, 0.35);
+    --text: #f5f3ff;
+    --text-dim: rgba(245, 243, 255, 0.7);
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-deep);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
+
+  /* Camera background */
+  #cameraVideo {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    background: #000;
+  }
+
+  /* Three.js canvas */
+  #threeCanvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
+    pointer-events: none;
+  }
+
+  /* Generic UI layer */
+  .ui {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* Top status text */
+  #statusBar {
+    position: fixed;
+    top: calc(var(--safe-top) + 16px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 12;
+    pointer-events: none;
+    padding: 10px 18px;
+    background: var(--glass);
+    border: 1px solid var(--glass-stroke);
+    border-radius: 999px;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.35), 0 0 24px rgba(168,85,247,0.15);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    max-width: 92vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  #statusBar.hidden { opacity: 0; transform: translate(-50%, -10px); }
+
+  /* Compass-calibration pill (auto-hides on first valid orientation event) */
+  #compassHint {
+    position: fixed;
+    top: calc(var(--safe-top) + 70px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 11;
+    pointer-events: none;
+    padding: 6px 12px;
+    background: rgba(20, 8, 40, 0.45);
+    border: 1px solid rgba(168, 85, 247, 0.25);
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    opacity: 0;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  #compassHint.visible { opacity: 1; }
+
+  /* Hand-detected indicator */
+  #handIndicator {
+    position: fixed;
+    top: calc(var(--safe-top) + 14px);
+    left: 14px;
+    z-index: 12;
+    pointer-events: none;
+    height: 44px;
+    min-width: 44px;
+    padding: 0 12px;
+    border-radius: 22px;
+    background: var(--glass);
+    border: 1px solid var(--glass-stroke);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    opacity: 0;
+    transform: scale(0.8);
+    transition: opacity 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease;
+    color: var(--text);
+  }
+  #handIndicator.active {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 18px rgba(168, 85, 247, 0.65);
+  }
+  #handIndicator.fist {
+    box-shadow: 0 0 22px rgba(251, 191, 36, 0.8);
+    border-color: rgba(251, 191, 36, 0.7);
+  }
+  #handIndicator .icon { font-size: 22px; line-height: 1; }
+  #handIndicator .val {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--text-dim);
+    font-variant-numeric: tabular-nums;
+  }
+  #handIndicator.fist .val { color: var(--accent-gold); }
+
+  /* Directional arrow hint */
+  #arrowHint {
+    position: fixed;
+    z-index: 11;
+    pointer-events: none;
+    width: 64px;
+    height: 64px;
+    transform: translate(-50%, -50%) rotate(0deg);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  #arrowHint.visible { opacity: 0.85; }
+  #arrowHint svg {
+    width: 100%;
+    height: 100%;
+    filter: drop-shadow(0 0 12px rgba(251, 191, 36, 0.6));
+    animation: arrowPulse 1.4s ease-in-out infinite;
+  }
+  @keyframes arrowPulse {
+    0%, 100% { transform: scale(1); opacity: 0.85; }
+    50% { transform: scale(1.15); opacity: 1; }
+  }
+
+  /* Countdown ring */
+  #countdownWrap {
+    position: fixed;
+    inset: 0;
+    z-index: 13;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  #countdownWrap.visible { opacity: 1; }
+  #countdownRing {
+    width: 220px;
+    height: 220px;
+    transform: rotate(-90deg);
+    filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.45));
+  }
+  #countdownRing .track {
+    fill: none;
+    stroke: rgba(255,255,255,0.12);
+    stroke-width: 8;
+  }
+  #countdownRing .progress {
+    fill: none;
+    stroke: url(#countdownGradient);
+    stroke-width: 10;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.05s linear;
+  }
+  #countdownText {
+    position: absolute;
+    text-align: center;
+    pointer-events: none;
+  }
+  #countdownNumber {
+    font-size: 88px;
+    font-weight: 800;
+    line-height: 1;
+    background: linear-gradient(180deg, #fff, var(--accent-gold));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 0 30px rgba(251, 191, 36, 0.4);
+    transition: transform 0.15s ease;
+  }
+  #countdownNumber.tick { transform: scale(1.18); }
+  #countdownLabel {
+    margin-top: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+  }
+
+  /* Full-screen flash overlay */
+  #flashOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 14;
+    pointer-events: none;
+    background: radial-gradient(circle at center, var(--accent-gold), var(--accent-purple));
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
+
+  /* Shockwave ring */
+  #shockwave {
+    position: fixed;
+    z-index: 13;
+    pointer-events: none;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: 3px solid rgba(251, 191, 36, 0.9);
+    transform: translate(-50%, -50%) scale(0);
+    box-shadow: 0 0 30px rgba(251, 191, 36, 0.6), inset 0 0 30px rgba(168, 85, 247, 0.4);
+    opacity: 0;
+  }
+  #shockwave.fire {
+    animation: shockwave 0.7s ease-out forwards;
+  }
+  @keyframes shockwave {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 1; border-width: 6px; }
+    100% { transform: translate(-50%, -50%) scale(14); opacity: 0; border-width: 1px; }
+  }
+
+  /* HUD slot */
+  #hudSlot {
+    position: fixed;
+    bottom: calc(var(--safe-bottom) + 18px);
+    right: 18px;
+    z-index: 11;
+    width: 84px;
+    height: 84px;
+    border-radius: 22px;
+    background: var(--glass);
+    border: 1px solid var(--glass-stroke);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 12px 30px rgba(0,0,0,0.5), 0 0 28px rgba(168,85,247,0.25);
+    opacity: 0;
+    transform: scale(0.6);
+    pointer-events: none;
+    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  #hudSlot.visible { opacity: 1; transform: scale(1); }
+  #hudCollectedText {
+    position: fixed;
+    bottom: calc(var(--safe-bottom) + 110px);
+    right: 18px;
+    z-index: 11;
+    width: 84px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--accent-gold);
+    text-shadow: 0 0 12px rgba(251,191,36,0.6);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: translateY(8px);
+  }
+  #hudCollectedText.visible { opacity: 1; transform: translateY(0); }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(-4deg); }
+    50% { transform: translateY(-12px) rotate(4deg); }
+  }
+
+  .primaryBtn {
+    pointer-events: auto;
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+    color: #fff;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    border: none;
+    border-radius: 999px;
+    padding: 16px 36px;
+    cursor: pointer;
+    box-shadow:
+      0 12px 28px rgba(168,85,247,0.5),
+      0 0 0 1px rgba(255,255,255,0.08) inset;
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+    letter-spacing: 0.01em;
+  }
+  .primaryBtn:active { transform: scale(0.96); }
+  .secondaryBtn {
+    pointer-events: auto;
+    background: var(--glass);
+    border: 1px solid var(--glass-stroke);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 999px;
+    padding: 12px 22px;
+    cursor: pointer;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    transition: transform 0.15s ease, background 0.2s ease;
+  }
+  .secondaryBtn:active { transform: scale(0.96); }
+
+  /* Loading spinner */
+  #loadingScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 25;
+    background: rgba(10, 0, 20, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    transition: opacity 0.4s ease;
+  }
+  #loadingScreen.hidden { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 56px;
+    height: 56px;
+    border: 4px solid rgba(255,255,255,0.1);
+    border-top-color: var(--accent-purple);
+    border-right-color: var(--accent-gold);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loadingText {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* Error / fallback overlay */
+  #errorScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 40;
+    background:
+      radial-gradient(ellipse at 50% 0%, rgba(236,72,153,0.18), transparent 50%),
+      rgba(10,0,20,0.92);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 24px;
+    text-align: center;
+  }
+  #errorScreen.visible { display: flex; }
+  #errorScreen .icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+  }
+  #errorScreen h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+  #errorScreen p {
+    color: var(--text-dim);
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 320px;
+    margin-bottom: 24px;
+  }
+
+  /* Manual collect fallback */
+  #manualCollect {
+    position: fixed;
+    bottom: calc(var(--safe-bottom) + 120px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 12;
+    display: none;
+  }
+  #manualCollect.visible { display: block; }
+
+  /* Facts modal */
+  #factsModal {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 35;
+    pointer-events: auto;
+    transform: translateY(100%);
+    transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+    padding: 12px;
+    padding-bottom: calc(var(--safe-bottom) + 12px);
+  }
+  #factsModal.visible { transform: translateY(0); }
+  #factsBackdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 34;
+    background: rgba(0,0,0,0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.4s ease;
+  }
+  #factsBackdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .factsCard {
+    background: linear-gradient(180deg, rgba(40, 12, 70, 0.88), rgba(20, 4, 40, 0.92));
+    border: 1px solid var(--glass-stroke);
+    border-radius: 28px;
+    padding: 22px 22px calc(22px);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    box-shadow: 0 -20px 60px rgba(0,0,0,0.5);
+    max-height: 86vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .factsCard .grabber {
+    width: 44px;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,0.25);
+    margin: 0 auto 16px;
+  }
+  .factsCard .stampIconBig {
+    width: 100px;
+    height: 100px;
+    margin: 4px auto 14px;
+    border-radius: 30px;
+    background:
+      radial-gradient(circle at 30% 30%, var(--accent-gold), var(--accent-purple) 75%);
+    box-shadow:
+      0 0 50px rgba(168,85,247,0.5),
+      inset 0 0 30px rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+    animation: float 4s ease-in-out infinite;
+  }
+  .factsCard h2 {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    background: linear-gradient(135deg, #fff, var(--accent-gold));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin-bottom: 4px;
+  }
+  .factsCard .subtitle {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 18px;
+  }
+  .factList {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .factItem {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .factItem .num {
+    flex: 0 0 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: #fff;
+    margin-top: 1px;
+  }
+  .factItem p {
+    font-size: 14px;
+    line-height: 1.45;
+    color: var(--text);
+  }
+  .activityBox {
+    background: linear-gradient(135deg, rgba(168,85,247,0.18), rgba(251,191,36,0.10));
+    border: 1px solid rgba(251,191,36,0.35);
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+  }
+  .activityBox .label {
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent-gold);
+    margin-bottom: 4px;
+  }
+  .activityBox p {
+    font-size: 14px;
+    line-height: 1.45;
+  }
+  .actionRow {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+  }
+  .actionRow .secondaryBtn {
+    flex: 0 0 auto;
+  }
+  .actionRow .primaryBtn {
+    flex: 1;
+    padding: 14px 18px;
+  }
+
+  /* Tiny utility */
+  .sr { position: absolute; left: -9999px; }
+</style>
+</head>
+<body>
+
+<!-- Camera feed -->
+<video id="cameraVideo" autoplay muted playsinline></video>
+
+<!-- Three.js canvas -->
+<canvas id="threeCanvas"></canvas>
+
+<!-- Top status text -->
+<div id="statusBar" class="hidden">Look around to find the stamp 👀</div>
+
+<!-- Compass calibration cue (auto-hides on first valid reading) -->
+<div id="compassHint">Calibrating compass…</div>
+
+<!-- Hand detected indicator with live closure readout -->
+<div id="handIndicator">
+  <span class="icon">✋</span>
+  <span class="val" id="handIndicatorVal">—</span>
+</div>
+
+<!-- Directional arrow hint -->
+<div id="arrowHint">
+  <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="arrowGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#fbbf24" />
+        <stop offset="100%" stop-color="#a855f7" />
+      </linearGradient>
+    </defs>
+    <path
+      d="M32 6 L52 36 L40 36 L40 58 L24 58 L24 36 L12 36 Z"
+      fill="url(#arrowGrad)"
+      stroke="rgba(255,255,255,0.5)"
+      stroke-width="1.5"
+      stroke-linejoin="round"
+    />
+  </svg>
+</div>
+
+<!-- Countdown ring -->
+<div id="countdownWrap">
+  <svg id="countdownRing" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <linearGradient id="countdownGradient" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#fbbf24" />S
+        <stop offset="50%" stop-color="#ec4899" />
+        <stop offset="100%" stop-color="#a855f7" />
+      </linearGradient>
+    </defs>
+    <circle class="track" cx="110" cy="110" r="100" />
+    <circle class="progress" cx="110" cy="110" r="100"
+      stroke-dasharray="628.318" stroke-dashoffset="628.318" />
+  </svg>
+  <div id="countdownText">
+    <div id="countdownNumber">3</div>
+    <div id="countdownLabel">Keep holding...</div>
+  </div>
+</div>
+
+<!-- Flash overlay -->
+<div id="flashOverlay"></div>
+
+<!-- Shockwave -->
+<div id="shockwave"></div>
+
+<!-- HUD collected stamp slot (visual frame; the 3D stamp itself parents to camera) -->
+<div id="hudSlot"></div>
+<div id="hudCollectedText">Stamp Collected! ✨</div>
+
+<!-- Manual collect fallback -->
+<div id="manualCollect">
+  <button class="primaryBtn" id="manualCollectBtn">Tap to Collect</button>
+</div>
+
+<!-- Loading screen -->
+<div id="loadingScreen" class="hidden">
+  <div class="spinner"></div>
+  <div id="loadingText">Loading the stamp…</div>
+</div>
+
+<!-- Error screen -->
+<div id="errorScreen">
+  <div class="icon" id="errorIcon">⚠️</div>
+  <h2 id="errorTitle">Something went wrong</h2>
+  <p id="errorMsg">Please try again.</p>
+  <button class="primaryBtn" id="errorRetryBtn">Try Again</button>
+</div>
+
+<!-- Facts modal -->
+<div id="factsBackdrop"></div>
+<div id="factsModal">
+  <div class="factsCard">
+    <div class="grabber"></div>
+    <div class="stampIconBig">🪙</div>
+    <h2 id="stampNameLabel">The Mystic Orb</h2>
+    <div class="subtitle">Stamp Discovered</div>
+    <div class="factList" id="factList"></div>
+    <div class="activityBox">
+      <div class="label">Next Quest</div>
+      <p id="activityText"></p>
+    </div>
+    <div class="actionRow">
+      <button class="secondaryBtn" id="shareBtn">Share</button>
+      <button class="primaryBtn" id="dismissBtn">Got it →</button>
+    </div>
+  </div>
+</div>
+
+<!-- MediaPipe Hands (legacy CDN, exposes globals) -->
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+
+<!-- Three.js via importmap -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+/* =====================================================================
+ * CONFIG
+ * ===================================================================== */
+const STAMP_URL = './assets/rodeo_coin.gltf';
+const STAMP_NAME = 'The Mystic Orb';
+const FUN_FACTS = [
+  'This orb has been lost for centuries, said to grant wisdom to its finder.',
+  'Only 3 of these exist in the known world.',
+  'Legend says it glows brighter in the presence of true curiosity.'
+];
+const ACTIVITY_PROMPT = 'Can you find the next stamp hidden somewhere nearby? Keep exploring!';
+
+const STAMP_POSITION = new THREE.Vector3(1.4, 0.2, -2.4); // off-center → user must look
+const HUD_DEPTH = 1.6;          // local-z magnitude (camera-space depth)
+const HUD_LOCAL_SCALE = 0.18;
+let HUD_LOCAL_POSITION = new THREE.Vector3(0.4, -0.78, -HUD_DEPTH); // recomputed at runtime
+
+/* Closure metric: avg per-finger extension =
+ *     dist(tip, MCP) / dist(PIP, MCP)
+ * across index/middle/ring/pinky.
+ *
+ * Each finger's score is ~3 fully extended, ~1 fully curled, regardless of
+ * hand rotation or foreshortening (both segments scale together). The
+ * average therefore reads:
+ *   open hand  ≈ 3.0
+ *   fist       ≈ 1.0–1.3
+ * Use generous mid-bands with hysteresis.
+ */
+const FIST_THRESHOLD     = 1.7;     // closure < this  → fist
+const OPEN_THRESHOLD     = 2.2;     // closure > this  → open
+const COUNTDOWN_DURATION = 3.0;     // seconds
+const CENTER_FOUND_FRACTION = 0.90; // very forgiving to accommodate desktop optical-flow imprecision
+const HAND_TIMEOUT_FOR_FALLBACK_MS = 8000; // show manual button after no hand
+
+/* =====================================================================
+ * STATE MACHINE
+ * ===================================================================== */
+const STATES = Object.freeze({
+  INIT: 'INIT',
+  SEARCHING: 'SEARCHING',
+  STAMP_IN_VIEW: 'STAMP_IN_VIEW',
+  GRABBING: 'GRABBING',
+  COLLECTING: 'COLLECTING',
+  COLLECTED: 'COLLECTED',
+  FACTS_SHOWN: 'FACTS_SHOWN'
+});
+let state = STATES.INIT;
+
+const STATUS_TEXTS = {
+  [STATES.INIT]: '',
+  [STATES.SEARCHING]: 'Look around to find the stamp 👀',
+  [STATES.STAMP_IN_VIEW]: 'You found it! Now grab it ✋',
+  [STATES.GRABBING]: 'Keep holding…',
+  [STATES.COLLECTING]: '',
+  [STATES.COLLECTED]: 'Stamp Collected! ✨',
+  [STATES.FACTS_SHOWN]: ''
+};
+
+let stampInViewEnteredMs = 0;
+
+function setState(next) {
+  if (state === next) return;
+  state = next;
+  const text = STATUS_TEXTS[state] || '';
+  if (text) {
+    statusBar.textContent = text;
+    statusBar.classList.remove('hidden');
+  } else {
+    statusBar.classList.add('hidden');
+  }
+
+  if (state === STATES.SEARCHING) {
+    arrowHint.classList.add('visible');
+  } else {
+    arrowHint.classList.remove('visible');
+  }
+
+  if (state === STATES.STAMP_IN_VIEW) {
+    stampInViewEnteredMs = performance.now();
+  }
+}
+
+/* =====================================================================
+ * DOM REFS
+ * ===================================================================== */
+const cameraVideo   = document.getElementById('cameraVideo');
+const threeCanvas   = document.getElementById('threeCanvas');
+
+const statusBar        = document.getElementById('statusBar');
+const compassHint      = document.getElementById('compassHint');
+const handIndicator    = document.getElementById('handIndicator');
+const handIndicatorVal = document.getElementById('handIndicatorVal');
+const arrowHint        = document.getElementById('arrowHint');
+
+const countdownWrap    = document.getElementById('countdownWrap');
+const countdownProgress = document.querySelector('#countdownRing .progress');
+const countdownNumber  = document.getElementById('countdownNumber');
+const countdownLabel   = document.getElementById('countdownLabel');
+
+const flashOverlay = document.getElementById('flashOverlay');
+const shockwave    = document.getElementById('shockwave');
+
+const hudSlot          = document.getElementById('hudSlot');
+const hudCollectedText = document.getElementById('hudCollectedText');
+
+const loadingScreen = document.getElementById('loadingScreen');
+const loadingText   = document.getElementById('loadingText');
+
+const errorScreen   = document.getElementById('errorScreen');
+const errorIcon     = document.getElementById('errorIcon');
+const errorTitle    = document.getElementById('errorTitle');
+const errorMsg      = document.getElementById('errorMsg');
+const errorRetryBtn = document.getElementById('errorRetryBtn');
+
+const manualCollect    = document.getElementById('manualCollect');
+const manualCollectBtn = document.getElementById('manualCollectBtn');
+
+const factsBackdrop = document.getElementById('factsBackdrop');
+const factsModal    = document.getElementById('factsModal');
+const stampNameLbl  = document.getElementById('stampNameLabel');
+const factList      = document.getElementById('factList');
+const activityText  = document.getElementById('activityText');
+const shareBtn      = document.getElementById('shareBtn');
+const dismissBtn    = document.getElementById('dismissBtn');
+
+/* =====================================================================
+ * HAPTICS
+ * ===================================================================== */
+function vibrate(pattern) {
+  try {
+    if ('vibrate' in navigator) {
+      navigator.vibrate(pattern);
+    }
+  } catch (_) { /* iOS silently fails — expected */ }
+}
+
+/* =====================================================================
+ * ERROR / FALLBACK UI
+ * ===================================================================== */
+function showError(title, message, retry) {
+  errorTitle.textContent = title;
+  errorMsg.textContent = message;
+  errorRetryBtn.style.display = retry ? 'inline-block' : 'none';
+  errorRetryBtn.onclick = retry || null;
+  errorScreen.classList.add('visible');
+}
+function hideError() {
+  errorScreen.classList.remove('visible');
+}
+
+/* =====================================================================
+ * THREE.JS SETUP
+ * ===================================================================== */
+let renderer, scene, camera, stampRoot, stampLight, particleSystem;
+const clock = new THREE.Clock();
+
+function initThree() {
+  renderer = new THREE.WebGLRenderer({
+    canvas: threeCanvas,
+    alpha: true,
+    antialias: true,
+    premultipliedAlpha: true
+  });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(window.innerWidth, window.innerHeight, false);
+  renderer.setClearColor(0x000000, 0);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.1;
+
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(
+    65, window.innerWidth / window.innerHeight, 0.05, 100
+  );
+  camera.position.set(0, 0, 0);
+
+  const ambient = new THREE.AmbientLight(0xffffff, 0.55);
+  scene.add(ambient);
+
+  const point = new THREE.PointLight(0xffffff, 1.2, 30);
+  point.position.set(2, 3, 2);
+  scene.add(point);
+
+  // Soft glow light that follows the stamp
+  stampLight = new THREE.PointLight(0xa855f7, 1.6, 6);
+  stampLight.position.copy(STAMP_POSITION);
+  scene.add(stampLight);
+
+  window.addEventListener('resize', onResize);
+}
+
+function onResize() {
+  if (!renderer || !camera) return;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  // If stamp already lives in HUD, re-anchor it to new HUD slot screen pos.
+  if (stampRoot && stampRoot.userData.isHud) {
+    recomputeHudLocalPosition();
+    stampRoot.position.copy(HUD_LOCAL_POSITION);
+  }
+}
+
+/* =====================================================================
+ * STAMP LOADING
+ * ===================================================================== */
+let stampReady = false;
+let baseStampScale = 1;
+
+function loadStamp() {
+  return new Promise((resolve, reject) => {
+    const loader = new GLTFLoader();
+    loader.load(
+      STAMP_URL,
+      (gltf) => {
+        const model = gltf.scene;
+
+        // Compute model bounds, normalize to ~0.6 unit max dimension
+        const box = new THREE.Box3().setFromObject(model);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const maxDim = Math.max(size.x, size.y, size.z) || 1;
+        const targetSize = 0.6;
+        const norm = targetSize / maxDim;
+        model.scale.multiplyScalar(norm);
+
+        // Recenter
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        model.position.sub(center.multiplyScalar(norm));
+
+        stampRoot = new THREE.Group();
+        stampRoot.add(model);
+        stampRoot.position.copy(STAMP_POSITION);
+        stampRoot.userData = {
+          basePosition: STAMP_POSITION.clone(),
+          worldPosition: STAMP_POSITION.clone(),
+          isHud: false
+        };
+
+        // Start invisible, fade in
+        stampRoot.traverse(obj => {
+          if (obj.isMesh) {
+            obj.material.transparent = true;
+            obj.material.opacity = 0;
+            obj.castShadow = false;
+            obj.receiveShadow = false;
+          }
+        });
+
+        baseStampScale = stampRoot.scale.x;
+        scene.add(stampRoot);
+        stampReady = true;
+        resolve();
+      },
+      undefined,
+      (err) => {
+        console.error('GLTF load error', err);
+        reject(err);
+      }
+    );
+  });
+}
+
+function setStampOpacity(o) {
+  if (!stampRoot) return;
+  stampRoot.traverse(obj => {
+    if (obj.isMesh && obj.material) {
+      obj.material.transparent = true;
+      obj.material.opacity = o;
+    }
+  });
+}
+
+/* =====================================================================
+ * CAMERA (getUserMedia)
+ * ===================================================================== */
+let mediaStream = null;
+function requestCameraStream() {
+  return navigator.mediaDevices.getUserMedia({
+    audio: false,
+    video: {
+      facingMode: { ideal: 'environment' },
+      width:  { ideal: 1280 },
+      height: { ideal: 720 }
+    }
+  });
+}
+
+async function attachCameraStream(streamPromise) {
+  try {
+    mediaStream = await streamPromise;
+    cameraVideo.srcObject = mediaStream;
+    await cameraVideo.play();
+    return true;
+  } catch (err) {
+    console.error('Camera error:', err);
+    showError(
+      'Camera access needed',
+      'Please allow camera access in your browser settings, then reload to start the hunt.',
+      () => location.reload()
+    );
+    return false;
+  }
+}
+
+/* =====================================================================
+ * DEVICE ORIENTATION
+ * ===================================================================== */
+let orientationSupported = false;
+let orientation = null;
+let screenOrient = 0;
+let stampPlacedFromOrientation = false;
+
+/* Place the stamp at a horizontal offset from the camera's current forward
+ * vector so the user has to physically pan to find it. Idempotent: the first
+ * successful call latches `stampPlacedFromOrientation` and subsequent calls
+ * are no-ops. Returns true on the call that actually placed the stamp.
+ */
+function placeStampOffscreenFromCurrentView() {
+  if (!stampRoot || stampPlacedFromOrientation) return false;
+  const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+  forward.y = 0;
+  if (forward.lengthSq() < 1e-6) {
+    // Camera is pointing nearly vertical — fall back to a fixed forward
+    // axis so we still get a meaningful off-screen placement instead of
+    // silently bailing out.
+    forward.set(0, 0, -1);
+  }
+  forward.normalize();
+  const sign = Math.random() < 0.5 ? -1 : 1;
+  const angle = sign * THREE.MathUtils.degToRad(60 + Math.random() * 80);
+  forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+  STAMP_POSITION.set(forward.x * 2.4, 0.2, forward.z * 2.4);
+  stampRoot.position.copy(STAMP_POSITION);
+  stampRoot.userData.basePosition.copy(STAMP_POSITION);
+  stampPlacedFromOrientation = true;
+  return true;
+}
+
+/* Kick off the iOS permission prompt synchronously from a user-gesture
+ * handler. Returns a promise that resolves to the permission state.
+ * On platforms that don't require explicit permission (Android, desktop),
+ * resolves to 'granted'.
+ */
+function requestOrientationPermission() {
+  if (typeof DeviceOrientationEvent !== 'undefined' &&
+      typeof DeviceOrientationEvent.requestPermission === 'function') {
+    try {
+      return DeviceOrientationEvent.requestPermission().catch(() => 'denied');
+    } catch (_) {
+      return Promise.resolve('denied');
+    }
+  }
+  return Promise.resolve('granted');
+}
+
+async function initDeviceOrientation(permissionPromise) {
+  const result = await permissionPromise;
+  if (result !== 'granted') {
+    orientationSupported = false;
+    return false;
+  }
+
+  return new Promise((resolve) => {
+    let received = false;
+    const handler = (e) => {
+      // iOS Safari frequently delivers `alpha: null` until the magnetometer
+      // is calibrated, but always provides `webkitCompassHeading` (clockwise
+      // 0-360 from magnetic north). Convert it to the same CCW convention
+      // the standard `alpha` uses so `updateCameraFromDevice` is unchanged.
+      const heading = (typeof e.webkitCompassHeading === 'number' &&
+                       !isNaN(e.webkitCompassHeading))
+        ? (360 - e.webkitCompassHeading) % 360
+        : e.alpha;
+
+      if (heading == null && e.beta == null && e.gamma == null) return;
+
+      if (!received) {
+        received = true;
+        orientationSupported = true;
+        // Hide the calibration cue once a real reading lands.
+        if (typeof compassHint !== 'undefined' && compassHint) {
+          compassHint.classList.remove('visible');
+        }
+        resolve(true);
+      }
+      orientation = orientation || { alpha: 0, beta: 0, gamma: 0 };
+      // Keep the previous alpha when this event has none, so the camera's
+      // Y rotation doesn't snap to 0 mid-stream.
+      if (heading != null) orientation.alpha = heading;
+      if (e.beta  != null) orientation.beta  = e.beta;
+      if (e.gamma != null) orientation.gamma = e.gamma;
+
+      updateCameraFromDevice();
+      placeStampOffscreenFromCurrentView();
+    };
+    // Standard event (Android / iOS once calibrated).
+    window.addEventListener('deviceorientation', handler, true);
+    // Absolute event when available (Android Chrome) — same handler, more
+    // reliable compass reference than the relative `deviceorientation`.
+    window.addEventListener('deviceorientationabsolute', handler, true);
+
+    window.addEventListener('orientationchange', () => {
+      screenOrient = window.orientation || 0;
+    });
+    screenOrient = window.orientation || 0;
+
+    // After 2s with no events, assume unsupported (desktop / privacy mode)
+    setTimeout(() => {
+      if (!received) {
+        orientationSupported = false;
+        resolve(false);
+      }
+    }, 2000);
+  });
+}
+
+const _q1 = new THREE.Quaternion();
+const _q2 = new THREE.Quaternion(-Math.sqrt(0.5), 0, 0, Math.sqrt(0.5)); // -90° X
+const _eu = new THREE.Euler();
+const _zee = new THREE.Vector3(0, 0, 1);
+
+function updateCameraFromDevice() {
+  if (!orientationSupported || !orientation) return;
+  const alpha = THREE.MathUtils.degToRad(orientation.alpha);
+  const beta  = THREE.MathUtils.degToRad(orientation.beta);
+  const gamma = THREE.MathUtils.degToRad(orientation.gamma);
+  const orient = THREE.MathUtils.degToRad(screenOrient);
+
+  _eu.set(beta, alpha, -gamma, 'YXZ');
+  camera.quaternion.setFromEuler(_eu);
+  camera.quaternion.multiply(_q2);
+  camera.quaternion.multiply(_q1.setFromAxisAngle(_zee, -orient));
+}
+
+/* =====================================================================
+ * OPTICAL-FLOW MOTION (desktop fallback when no gyroscope is present)
+ *
+ * Estimates frame-to-frame webcam motion via shift-and-SAD on a 64x48
+ * luminance grid, then integrates the result into synthetic
+ * `orientation.alpha` / `.beta` so the existing `updateCameraFromDevice`
+ * pipeline drives the camera without any other changes.
+ *
+ * It's a coarse approximation of a real gyro — enough to make the stamp
+ * feel world-anchored when you sweep a Mac webcam around the room.
+ * ===================================================================== */
+const OF_W = 64;
+const OF_H = 48;
+const OF_DX_RANGE = 6;     // ±px horizontal search
+const OF_DY_RANGE = 4;     // ±px vertical search
+const OF_LP_ALPHA = 0.7;   // low-pass smoothing on the recovered (dx,dy)
+let opticalFlowActive = false;
+let _ofCanvas = null;
+let _ofCtx = null;
+let _ofPrev = null;        // Uint8Array(OF_W * OF_H) — previous luma grid
+let _ofCur  = null;        // Uint8Array(OF_W * OF_H) — current  luma grid
+let _ofHasPrev = false;
+let _ofLastMs = 0;
+let _ofRaf = 0;
+let _ofSmoothDx = 0;
+let _ofSmoothDy = 0;
+// Synthetic Euler accumulator (degrees) — fed back into `orientation`.
+let _ofYawDeg = 0;
+let _ofPitchDeg = 0;
+
+function startOpticalFlow() {
+  if (opticalFlowActive) return;
+  if (!cameraVideo || cameraVideo.readyState < 2) {
+    // Wait until we actually have video frames to read from.
+    setTimeout(startOpticalFlow, 100);
+    return;
+  }
+  _ofCanvas = document.createElement('canvas');
+  _ofCanvas.width = OF_W;
+  _ofCanvas.height = OF_H;
+  _ofCtx = _ofCanvas.getContext('2d', { willReadFrequently: true });
+  _ofPrev = new Uint8Array(OF_W * OF_H);
+  _ofCur  = new Uint8Array(OF_W * OF_H);
+  // Seed the synthetic orientation so updateCameraFromDevice() doesn't bail.
+  orientation = orientation || { alpha: 0, beta: 0, gamma: 0 };
+  orientationSupported = true;
+  opticalFlowActive = true;
+  _ofLastMs = performance.now();
+  // Optical flow replaces the compass — hide the calibrating pill.
+  if (typeof compassHint !== 'undefined' && compassHint) {
+    compassHint.classList.remove('visible');
+  }
+  _ofTick();
+}
+
+function _ofGrabLuma(target) {
+  _ofCtx.drawImage(cameraVideo, 0, 0, OF_W, OF_H);
+  const data = _ofCtx.getImageData(0, 0, OF_W, OF_H).data;
+  // ITU-R BT.601 luma — fast integer approximation.
+  for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+    target[j] = (data[i] * 77 + data[i + 1] * 151 + data[i + 2] * 28) >> 8;
+  }
+}
+
+function _ofComputeShift() {
+  // Search the (dx, dy) that minimizes SAD between current and previous
+  // grids over the overlap region. Skip every other pixel for speed.
+  let bestDx = 0, bestDy = 0;
+  let bestSad = Infinity;
+  for (let dy = -OF_DY_RANGE; dy <= OF_DY_RANGE; dy++) {
+    const yMin = Math.max(0, -dy);
+    const yMax = Math.min(OF_H, OF_H - dy);
+    for (let dx = -OF_DX_RANGE; dx <= OF_DX_RANGE; dx++) {
+      const xMin = Math.max(0, -dx);
+      const xMax = Math.min(OF_W, OF_W - dx);
+      let sad = 0;
+      for (let y = yMin; y < yMax; y += 2) {
+        const rowCur  = y * OF_W;
+        const rowPrev = (y + dy) * OF_W;
+        for (let x = xMin; x < xMax; x += 2) {
+          const a = _ofCur[rowCur + x];
+          const b = _ofPrev[rowPrev + x + dx];
+          sad += a > b ? a - b : b - a;
+          if (sad >= bestSad) break;
+        }
+        if (sad >= bestSad) break;
+      }
+      if (sad < bestSad) {
+        bestSad = sad;
+        bestDx = dx;
+        bestDy = dy;
+      }
+    }
+  }
+  return [bestDx, bestDy];
+}
+
+function _ofTick() {
+  if (!opticalFlowActive) return;
+  _ofRaf = requestAnimationFrame(_ofTick);
+
+  if (!cameraVideo || cameraVideo.readyState < 2) return;
+
+  // Run motion estimation at ~30 Hz to keep CPU low.
+  const now = performance.now();
+  if (now - _ofLastMs < 33) return;
+  _ofLastMs = now;
+
+  // Snapshot current frame.
+  _ofGrabLuma(_ofCur);
+
+  // First frame: just stash it; we need two frames before we can shift.
+  if (!_ofHasPrev) {
+    _ofPrev.set(_ofCur);
+    _ofHasPrev = true;
+    return;
+  }
+
+  const [dx, dy] = _ofComputeShift();
+
+  // Low-pass filter to reduce jitter.
+  _ofSmoothDx = OF_LP_ALPHA * _ofSmoothDx + (1 - OF_LP_ALPHA) * dx;
+  _ofSmoothDy = OF_LP_ALPHA * _ofSmoothDy + (1 - OF_LP_ALPHA) * dy;
+
+  // Convert pixel shift → camera-space angular delta.
+  // When the webcam pans RIGHT, the world appears to slide LEFT in the
+  // frame, so dx < 0 — invert sign so positive yaw means "looking right".
+  const hfovDeg = camera ? camera.fov * camera.aspect : 60;
+  const vfovDeg = camera ? camera.fov : 45;
+  _ofYawDeg   -= _ofSmoothDx * (hfovDeg / OF_W);
+  _ofPitchDeg += _ofSmoothDy * (vfovDeg / OF_H);
+  // Clamp pitch so the user can't spin into Gimbal-lock weirdness.
+  _ofPitchDeg = Math.max(-80, Math.min(80, _ofPitchDeg));
+
+  orientation.alpha = _ofYawDeg;
+  orientation.beta  = 90 + _ofPitchDeg; // beta=90 == phone held vertical
+  orientation.gamma = 0;
+
+  // Swap buffers (reuse previous as next "current" allocation).
+  const tmp = _ofPrev; _ofPrev = _ofCur; _ofCur = tmp;
+}
+
+/* =====================================================================
+ * MEDIAPIPE HANDS
+ * ===================================================================== */
+let hands = null;
+let mediapipeReady = false;
+let mediapipeFailed = false;
+let frameToggle = 0;
+let lastHandLandmarks = null;
+let handVisible = false;
+let lastHandSeenMs = 0;
+
+async function initMediaPipe() {
+  if (typeof Hands === 'undefined') {
+    console.warn('MediaPipe Hands global not found.');
+    mediapipeFailed = true;
+    showManualFallback();
+    return;
+  }
+  try {
+    hands = new Hands({
+      locateFile: (file) =>
+        `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${file}`
+    });
+    hands.setOptions({
+      maxNumHands: 1,
+      modelComplexity: 0,
+      minDetectionConfidence: 0.6,
+      minTrackingConfidence: 0.5
+    });
+    hands.onResults(onHandResults);
+
+    // CRITICAL: explicitly await WASM/asset instantiation before any send().
+    // Without this, the first send() can fire while HEAP8.buffer is still
+    // undefined on Safari, crashing the pipeline (HEAP8.buffer undefined →
+    // Out of bounds memory access → abort).
+    await hands.initialize();
+
+    mediapipeReady = true;
+  } catch (err) {
+    console.error('MediaPipe init failed', err);
+    mediapipeFailed = true;
+    showManualFallback();
+  }
+}
+
+function showManualFallback() {
+  manualCollect.classList.add('visible');
+}
+function hideManualFallback() {
+  manualCollect.classList.remove('visible');
+}
+
+function onHandResults(results) {
+  const hasHand =
+    results.multiHandLandmarks &&
+    results.multiHandLandmarks.length > 0;
+
+  if (hasHand) {
+    lastHandLandmarks = results.multiHandLandmarks[0];
+    lastHandSeenMs = performance.now();
+    if (!handVisible) {
+      handVisible = true;
+      handIndicator.classList.add('active');
+    }
+    processGrabGesture(lastHandLandmarks);
+  } else {
+    handIndicatorVal.textContent = '—';
+    handIndicator.classList.remove('fist');
+  }
+}
+
+/* Per-finger extension: dist(tip, MCP) / dist(PIP, MCP).
+ * Robust to hand rotation and palm-facing-camera foreshortening because both
+ * segments scale together. ~3 extended, ~1 curled.
+ */
+function fingerExtension(lm, mcp, pip, tip) {
+  const dxTM = lm[tip].x - lm[mcp].x;
+  const dyTM = lm[tip].y - lm[mcp].y;
+  const dxPM = lm[pip].x - lm[mcp].x;
+  const dyPM = lm[pip].y - lm[mcp].y;
+  const tipDist = Math.hypot(dxTM, dyTM);
+  const pipDist = Math.hypot(dxPM, dyPM) || 0.0001;
+  return tipDist / pipDist;
+}
+
+/* Average extension across index, middle, ring, pinky. Thumb deliberately
+ * excluded because its anatomy is different (and grabbing involves tucking
+ * the four fingers, not necessarily the thumb).
+ */
+function computeHandClosure(lm) {
+  const idx = fingerExtension(lm, 5,  6,  8);
+  const mid = fingerExtension(lm, 9,  10, 12);
+  const rng = fingerExtension(lm, 13, 14, 16);
+  const pky = fingerExtension(lm, 17, 18, 20);
+  return (idx + mid + rng + pky) / 4;
+}
+
+/* =====================================================================
+ * GRAB GESTURE LOGIC
+ *
+ * Two layers, by design:
+ *   (a) `isFist` — pure gesture detection with hysteresis (no app state).
+ *   (b) Each frame we then map (state × isFist) onto countdown actions, so
+ *       it correctly handles the case where the user is *already holding*
+ *       a fist when the stamp first comes into view (no transition needed).
+ * ===================================================================== */
+let isFist = false; // hysteretic raw fist detection
+
+function processGrabGesture(lm) {
+  const closure = computeHandClosure(lm);
+
+  // Hysteretic fist detection
+  if (!isFist && closure < FIST_THRESHOLD) {
+    isFist = true;
+  } else if (isFist && closure > OPEN_THRESHOLD) {
+    isFist = false;
+  }
+
+  // Live readout for the user to see what the model is reporting
+  handIndicatorVal.textContent = closure.toFixed(2);
+  handIndicator.classList.toggle('fist', isFist);
+
+  // Map gesture to action based on current app state
+  if (isFist) {
+    if (state === STATES.STAMP_IN_VIEW) {
+      setState(STATES.GRABBING);
+      startCountdown();
+    }
+  } else {
+    if (state === STATES.GRABBING) {
+      cancelCountdown();
+      setState(STATES.STAMP_IN_VIEW);
+      statusBar.textContent = 'Grab it! ✋';
+      statusBar.classList.remove('hidden');
+    }
+  }
+}
+
+/* =====================================================================
+ * GRAB COUNTDOWN
+ * ===================================================================== */
+let countdown = null;     // { startSec, lastTick }
+const RING_CIRC = 2 * Math.PI * 100;
+
+function setRingProgress(p) {
+  const offset = RING_CIRC * (1 - p);
+  countdownProgress.setAttribute('stroke-dashoffset', offset.toFixed(2));
+}
+
+function startCountdown() {
+  countdown = {
+    startSec: clock.elapsedTime,
+    lastTickInt: 4 // so first tick fires immediately at int=3
+  };
+  countdownWrap.classList.add('visible');
+  countdownNumber.textContent = '3';
+  countdownLabel.textContent = 'Keep holding…';
+  setRingProgress(0);
+}
+function cancelCountdown() {
+  countdown = null;
+  countdownWrap.classList.remove('visible');
+  setRingProgress(0);
+}
+function tickCountdown() {
+  if (!countdown) return;
+  const t = clock.elapsedTime - countdown.startSec;
+  const p = Math.min(t / COUNTDOWN_DURATION, 1);
+  setRingProgress(p);
+
+  const remaining = Math.max(0, COUNTDOWN_DURATION - t);
+  const intRem = Math.ceil(remaining);
+  if (intRem !== countdown.lastTickInt && intRem >= 1 && intRem <= 3) {
+    countdown.lastTickInt = intRem;
+    countdownNumber.textContent = String(intRem);
+    countdownNumber.classList.remove('tick');
+    void countdownNumber.offsetWidth;
+    countdownNumber.classList.add('tick');
+
+    if      (intRem === 3) vibrate(100);
+    else if (intRem === 2) vibrate(200);
+    else if (intRem === 1) vibrate(300);
+  }
+
+  if (p >= 0.33 && p < 0.66) countdownLabel.textContent = 'Almost…';
+  else if (p >= 0.66)        countdownLabel.textContent = "Don't let go!";
+
+  if (p >= 1) {
+    completeCountdown();
+  }
+}
+function completeCountdown() {
+  countdown = null;
+  countdownWrap.classList.remove('visible');
+  setRingProgress(0);
+  vibrate([100, 50, 100, 50, 500]);
+  triggerCollection();
+}
+
+/* =====================================================================
+ * COLLECTION ANIMATION SEQUENCE
+ * ===================================================================== */
+let collection = null; // { startSec, phase, freezePos, particleGroup }
+
+function triggerCollection() {
+  if (state === STATES.COLLECTING || state === STATES.COLLECTED) return;
+  setState(STATES.COLLECTING);
+
+  // Capture stamp world position for shockwave & particle origin
+  const worldPos = new THREE.Vector3();
+  stampRoot.getWorldPosition(worldPos);
+
+  // Project to screen for shockwave placement
+  const screen = worldToScreen(worldPos);
+  shockwave.style.left = `${screen.x}px`;
+  shockwave.style.top  = `${screen.y}px`;
+
+  collection = {
+    startSec: clock.elapsedTime,
+    phase: 'freeze',
+    worldPos,
+    initialScale: stampRoot.scale.x,
+    initialPos: stampRoot.position.clone(),
+    initialQuat: stampRoot.quaternion.clone(),
+    spawnedParticles: false,
+    flashFired: false,
+    poppedFired: false,
+    flightStartSec: null,
+    shrinkStartSec: null,
+    shrinkStartLocal: null,
+    settleDoneFired: false
+  };
+
+  // Phase 0: freeze frame, white/gold flash on stamp
+  setStampEmissive(0xfff1c4, 1.4);
+  vibrate([500]);
+
+  // Full-screen flash 0 → 0.4 → 0 over 300ms
+  flashOverlay.style.transition = 'opacity 0.15s ease-out';
+  flashOverlay.style.opacity = '0.4';
+  setTimeout(() => {
+    flashOverlay.style.transition = 'opacity 0.15s ease-in';
+    flashOverlay.style.opacity = '0';
+  }, 150);
+}
+
+function setStampEmissive(color, intensity) {
+  if (!stampRoot) return;
+  stampRoot.traverse(obj => {
+    if (obj.isMesh && obj.material) {
+      if ('emissive' in obj.material) {
+        obj.material.emissive.setHex(color);
+        obj.material.emissiveIntensity = intensity;
+      }
+    }
+  });
+}
+
+function tickCollection(dt) {
+  if (!collection) return;
+  const t = clock.elapsedTime - collection.startSec;
+
+  // 0.0–0.1s: freeze
+  if (collection.phase === 'freeze' && t >= 0.1) {
+    collection.phase = 'pop';
+    // Trigger shockwave element
+    shockwave.classList.remove('fire');
+    void shockwave.offsetWidth;
+    shockwave.classList.add('fire');
+    collection.poppedFired = true;
+  }
+
+  // 0.1–0.2s: pop scale to 1.5x
+  if (collection.phase === 'pop') {
+    const localT = (t - 0.1) / 0.1; // 0..1
+    const k = Math.min(localT, 1);
+    const s = collection.initialScale * (1 + 0.5 * k);
+    stampRoot.scale.setScalar(s);
+    if (localT >= 1) {
+      collection.phase = 'flight';
+      collection.flightStartSec = clock.elapsedTime;
+      // Spawn particles at current world pos
+      const wp = new THREE.Vector3();
+      stampRoot.getWorldPosition(wp);
+      spawnParticles(wp);
+      // Reduce stamp emissive flash
+      setStampEmissive(0x000000, 0);
+    }
+  }
+
+  // 0.2–0.8s: flight toward camera (Z from initial.z to 0.5 in front of camera)
+  if (collection.phase === 'flight') {
+    const flT = (clock.elapsedTime - collection.flightStartSec) / 0.6;
+    const k = Math.min(flT, 1);
+    const eased = easeInCubic(k);
+    // Move world position from initialPos toward camera at distance 0.5
+    const targetWorld = new THREE.Vector3(0, 0, -0.5).applyMatrix4(camera.matrixWorld);
+    const newPos = new THREE.Vector3().lerpVectors(collection.initialPos, targetWorld, eased);
+    stampRoot.position.copy(newPos);
+
+    // Scale grows due to perspective + extra
+    const s = collection.initialScale * (1.5 + 1.6 * eased);
+    stampRoot.scale.setScalar(s);
+
+    // Rotation wobble
+    const wobX = Math.sin(eased * Math.PI * 6) * 0.5;
+    const wobZ = Math.cos(eased * Math.PI * 4) * 0.4;
+    stampRoot.rotation.x = wobX;
+    stampRoot.rotation.z = wobZ;
+    stampRoot.rotation.y += dt * 4.5;
+
+    if (flT >= 1) {
+      collection.phase = 'shrink';
+      collection.shrinkStartSec = clock.elapsedTime;
+      recomputeHudLocalPosition();
+      // Reparent to camera so it's now in screen space
+      const localPos = new THREE.Vector3();
+      stampRoot.getWorldPosition(localPos);
+      camera.worldToLocal(localPos);
+      const localQuat = stampRoot.quaternion.clone();
+      camera.add(stampRoot);
+      stampRoot.position.copy(localPos);
+      stampRoot.quaternion.copy(localQuat);
+      stampRoot.userData.isHud = true;
+      collection.shrinkStartLocal = localPos.clone();
+      collection.shrinkStartScale = stampRoot.scale.x;
+    }
+  }
+
+  // 0.8–1.5s: shrink along bezier arc to bottom-right HUD
+  if (collection.phase === 'shrink') {
+    const sT = (clock.elapsedTime - collection.shrinkStartSec) / 0.7;
+    const k = Math.min(sT, 1);
+    const eased = easeOutCubic(k);
+
+    // Quadratic bezier in local-camera space:
+    // p0 = current shrinkStartLocal, p2 = HUD_LOCAL_POSITION
+    // control p1 chosen above-and-right of midpoint for nice arc
+    const p0 = collection.shrinkStartLocal;
+    const p2 = HUD_LOCAL_POSITION;
+    const p1 = new THREE.Vector3(
+      (p0.x + p2.x) * 0.5 + 0.4,
+      Math.max(p0.y, p2.y) + 0.6,
+      (p0.z + p2.z) * 0.5
+    );
+    const inv = 1 - eased;
+    const pos = new THREE.Vector3()
+      .addScaledVector(p0, inv * inv)
+      .addScaledVector(p1, 2 * inv * eased)
+      .addScaledVector(p2, eased * eased);
+    stampRoot.position.copy(pos);
+
+    // Scale shrinks to HUD scale (0.15x of base)
+    const targetScale = baseStampScale * HUD_LOCAL_SCALE;
+    const s = THREE.MathUtils.lerp(collection.shrinkStartScale, targetScale, eased);
+    stampRoot.scale.setScalar(s);
+
+    // Subtle spin during travel
+    stampRoot.rotation.y += dt * 6;
+    stampRoot.rotation.x = THREE.MathUtils.lerp(stampRoot.rotation.x, 0, eased);
+    stampRoot.rotation.z = THREE.MathUtils.lerp(stampRoot.rotation.z, 0, eased);
+
+    if (sT >= 1) {
+      collection.phase = 'settle';
+      collection.settleStartSec = clock.elapsedTime;
+      hudSlot.classList.add('visible');
+      hudCollectedText.classList.add('visible');
+      setState(STATES.COLLECTED);
+    }
+  }
+
+  // 1.5s+: settle bounce
+  if (collection.phase === 'settle') {
+    const stT = (clock.elapsedTime - collection.settleStartSec) / 0.5;
+    const k = Math.min(stT, 1);
+    const targetScale = baseStampScale * HUD_LOCAL_SCALE;
+    // overshoot bounce
+    const bounce = Math.sin(k * Math.PI) * 0.18 * (1 - k);
+    stampRoot.scale.setScalar(targetScale * (1 + bounce));
+    stampRoot.position.copy(HUD_LOCAL_POSITION);
+    stampRoot.rotation.y += dt * 1.2;
+
+    if (stT >= 1 && !collection.settleDoneFired) {
+      collection.settleDoneFired = true;
+      collection.phase = 'hud';
+      // Open facts modal 1.5s later
+      setTimeout(showFactsModal, 1500);
+    }
+  }
+
+  // 'hud' phase: persistent slow spin
+  if (collection.phase === 'hud') {
+    stampRoot.rotation.y += dt * 0.6;
+    stampRoot.position.copy(HUD_LOCAL_POSITION);
+  }
+}
+
+function easeInCubic(t)  { return t * t * t; }
+function easeOutCubic(t) { return 1 - Math.pow(1 - t, 3); }
+
+/* =====================================================================
+ * PARTICLE BURST
+ * ===================================================================== */
+function makeParticleTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grad = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  grad.addColorStop(0, 'rgba(255,255,255,1)');
+  grad.addColorStop(0.4, 'rgba(255,255,255,0.7)');
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  g.fillStyle = grad;
+  g.beginPath();
+  g.arc(32, 32, 32, 0, Math.PI * 2);
+  g.fill();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function makeStarTexture() {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  g.translate(32, 32);
+  g.fillStyle = '#fff';
+  g.beginPath();
+  for (let i = 0; i < 10; i++) {
+    const angle = (i / 10) * Math.PI * 2 - Math.PI / 2;
+    const r = i % 2 === 0 ? 28 : 12;
+    const x = Math.cos(angle) * r;
+    const y = Math.sin(angle) * r;
+    if (i === 0) g.moveTo(x, y); else g.lineTo(x, y);
+  }
+  g.closePath();
+  g.shadowColor = '#fff';
+  g.shadowBlur = 12;
+  g.fill();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+let dotTex, starTex;
+
+function spawnParticles(originWorld) {
+  if (!dotTex)  dotTex  = makeParticleTexture();
+  if (!starTex) starTex = makeStarTexture();
+
+  const COUNT = 60;
+  const palette = [
+    new THREE.Color(0xa855f7),
+    new THREE.Color(0xfbbf24),
+    new THREE.Color(0xec4899),
+    new THREE.Color(0xffffff)
+  ];
+
+  const dots = makeParticleGroup(COUNT - 16, dotTex, palette, originWorld, false);
+  const stars = makeParticleGroup(16, starTex, palette, originWorld, true);
+
+  scene.add(dots);
+  scene.add(stars);
+
+  if (!particleSystem) particleSystem = [];
+  particleSystem.push(dots, stars);
+
+  collection.spawnedParticles = true;
+  collection.particleStartSec = clock.elapsedTime;
+}
+
+function makeParticleGroup(count, texture, palette, originWorld, big) {
+  const positions = new Float32Array(count * 3);
+  const velocities = new Float32Array(count * 3);
+  const colors = new Float32Array(count * 3);
+
+  for (let i = 0; i < count; i++) {
+    const i3 = i * 3;
+    positions[i3]     = originWorld.x;
+    positions[i3 + 1] = originWorld.y;
+    positions[i3 + 2] = originWorld.z;
+
+    // random outward velocity
+    const theta = Math.random() * Math.PI * 2;
+    const phi   = Math.acos(2 * Math.random() - 1);
+    const speed = (big ? 1.4 : 2.1) * (0.4 + Math.random() * 0.8);
+    velocities[i3]     = Math.sin(phi) * Math.cos(theta) * speed;
+    velocities[i3 + 1] = Math.cos(phi) * speed + 0.4;
+    velocities[i3 + 2] = Math.sin(phi) * Math.sin(theta) * speed;
+
+    const col = palette[Math.floor(Math.random() * palette.length)];
+    colors[i3]     = col.r;
+    colors[i3 + 1] = col.g;
+    colors[i3 + 2] = col.b;
+  }
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute('color',    new THREE.BufferAttribute(colors, 3));
+
+  const mat = new THREE.PointsMaterial({
+    size: big ? 0.22 : 0.10,
+    map: texture,
+    vertexColors: true,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    opacity: 1
+  });
+
+  const points = new THREE.Points(geo, mat);
+  points.userData = {
+    velocities,
+    bornSec: clock.elapsedTime,
+    life: 0.8
+  };
+  return points;
+}
+
+function updateParticles(dt) {
+  if (!particleSystem || particleSystem.length === 0) return;
+  for (let i = particleSystem.length - 1; i >= 0; i--) {
+    const sys = particleSystem[i];
+    const age = clock.elapsedTime - sys.userData.bornSec;
+    const life = sys.userData.life;
+    const k = Math.min(age / life, 1);
+
+    const pos = sys.geometry.attributes.position.array;
+    const vel = sys.userData.velocities;
+    for (let j = 0; j < pos.length; j += 3) {
+      pos[j]     += vel[j]     * dt;
+      pos[j + 1] += vel[j + 1] * dt - 1.6 * dt * age; // gravity
+      pos[j + 2] += vel[j + 2] * dt;
+      vel[j]     *= (1 - 1.5 * dt);
+      vel[j + 1] *= (1 - 0.6 * dt);
+      vel[j + 2] *= (1 - 1.5 * dt);
+    }
+    sys.geometry.attributes.position.needsUpdate = true;
+    sys.material.opacity = 1 - k;
+
+    if (age >= life) {
+      scene.remove(sys);
+      sys.geometry.dispose();
+      sys.material.dispose();
+      particleSystem.splice(i, 1);
+    }
+  }
+}
+
+/* =====================================================================
+ * SEARCHING / FOUND DETECTION
+ * ===================================================================== */
+const _stampWorld = new THREE.Vector3();
+const _ndc = new THREE.Vector3();
+
+function worldToScreen(worldVec) {
+  _ndc.copy(worldVec).project(camera);
+  return {
+    x: (_ndc.x * 0.5 + 0.5) * window.innerWidth,
+    y: (-_ndc.y * 0.5 + 0.5) * window.innerHeight,
+    z: _ndc.z
+  };
+}
+
+/* Convert a screen-space pixel (sx, sy) to camera-local space at depth `depth`
+ * (positive number; result has z = -depth). Useful for landing the stamp on
+ * the HUD slot regardless of viewport size / aspect ratio.
+ */
+function screenToCameraLocal(sx, sy, depth) {
+  const ndcX = (sx / window.innerWidth) * 2 - 1;
+  const ndcY = -(sy / window.innerHeight) * 2 + 1;
+  const halfFovY = THREE.MathUtils.degToRad(camera.fov) / 2;
+  const halfH = Math.tan(halfFovY) * depth;
+  const halfW = halfH * camera.aspect;
+  return new THREE.Vector3(ndcX * halfW, ndcY * halfH, -depth);
+}
+
+function recomputeHudLocalPosition() {
+  const r = hudSlot.getBoundingClientRect();
+  const cx = r.left + r.width / 2;
+  const cy = r.top  + r.height / 2;
+  HUD_LOCAL_POSITION = screenToCameraLocal(cx, cy, HUD_DEPTH);
+}
+
+function updateSearchAndPulse(dt) {
+  if (!stampRoot || stampRoot.userData.isHud) return;
+
+  // Stamp world pos (it's still in world space pre-collection)
+  stampRoot.getWorldPosition(_stampWorld);
+  _ndc.copy(_stampWorld).project(camera);
+
+  const inFront = _ndc.z < 1;
+  const cx = _ndc.x; // -1..1
+  const cy = _ndc.y; // -1..1
+
+  // Stamp is "in view" when it falls inside this fraction of the visible NDC
+  // box. Generous on desktop because optical-flow yaw/pitch is coarser than a
+  // real gyroscope, so a stricter window is unreachable in practice.
+  const half = CENTER_FOUND_FRACTION / 2;
+  const inCenter = inFront &&
+    Math.abs(cx) < half && Math.abs(cy) < half;
+
+  if (state === STATES.SEARCHING) {
+    if (inCenter) {
+      setState(STATES.STAMP_IN_VIEW);
+    }
+    // Update arrow hint
+    updateArrowHint(inFront, cx, cy);
+  } else if (state === STATES.STAMP_IN_VIEW) {
+    // If user pans away significantly, drop back to SEARCHING
+    if (!inFront || Math.abs(cx) > half * 2.2 || Math.abs(cy) > half * 2.2) {
+      setState(STATES.SEARCHING);
+    }
+  }
+
+  // Pulse animation while in view (and during STAMP_IN_VIEW / GRABBING)
+  if (state === STATES.STAMP_IN_VIEW || state === STATES.GRABBING) {
+    const pulse = 1 + Math.sin(clock.elapsedTime * 4) * 0.08;
+    stampRoot.scale.setScalar(baseStampScale * pulse);
+    stampLight.intensity = 1.6 + Math.sin(clock.elapsedTime * 4) * 1.0;
+  }
+}
+
+function updateArrowHint(inFront, ndcX, ndcY) {
+  // If stamp is on-screen and reasonably visible, hide arrow
+  if (inFront && Math.abs(ndcX) < 0.85 && Math.abs(ndcY) < 0.85) {
+    arrowHint.classList.remove('visible');
+    return;
+  }
+  if (state !== STATES.SEARCHING) return;
+  arrowHint.classList.add('visible');
+
+  const sx = inFront ? ndcX : -ndcX;
+  const sy = inFront ? ndcY : -ndcY;
+
+  const w = window.innerWidth, h = window.innerHeight;
+  const cx = w / 2, cy = h / 2;
+  const margin = 70;
+
+  // Project ndc to screen direction, clamp to edge
+  const dx = sx;
+  const dy = -sy;
+  const len = Math.hypot(dx, dy) || 0.0001;
+  const ux = dx / len, uy = dy / len;
+
+  const maxX = (w / 2) - margin;
+  const maxY = (h / 2) - margin;
+  const scale = Math.min(maxX / Math.abs(ux || 0.0001), maxY / Math.abs(uy || 0.0001));
+  const px = cx + ux * scale;
+  const py = cy + uy * scale;
+
+  // Arrow rotation: point from screen-center toward (px, py)
+  const angle = Math.atan2(py - cy, px - cx) + Math.PI / 2; // arrow points "up" by default
+  arrowHint.style.left = `${px}px`;
+  arrowHint.style.top  = `${py}px`;
+  arrowHint.style.transform = `translate(-50%, -50%) rotate(${angle}rad)`;
+}
+
+/* =====================================================================
+ * IDLE & FADE-IN ANIMATION
+ * ===================================================================== */
+let stampFadeStart = null;
+function tickIdle(dt) {
+  if (!stampRoot || stampRoot.userData.isHud) return;
+
+  if (stampFadeStart === null) stampFadeStart = clock.elapsedTime;
+  const fade = Math.min((clock.elapsedTime - stampFadeStart) / 0.8, 1);
+  setStampOpacity(fade);
+
+  // While in SEARCHING (and the pulse logic isn't overriding scale), apply gentle float
+  if (state === STATES.SEARCHING) {
+    const base = stampRoot.userData.basePosition;
+    stampRoot.position.x = base.x;
+    stampRoot.position.y = base.y + Math.sin(clock.elapsedTime * 1.4) * 0.07;
+    stampRoot.position.z = base.z;
+    stampRoot.scale.setScalar(baseStampScale);
+    stampLight.intensity = 1.6;
+  } else if (state === STATES.STAMP_IN_VIEW || state === STATES.GRABBING) {
+    const base = stampRoot.userData.basePosition;
+    stampRoot.position.x = base.x;
+    stampRoot.position.y = base.y + Math.sin(clock.elapsedTime * 1.4) * 0.07;
+    stampRoot.position.z = base.z;
+  }
+
+  // Slow Y rotation idle (only pre-collection)
+  if (state === STATES.SEARCHING ||
+      state === STATES.STAMP_IN_VIEW ||
+      state === STATES.GRABBING) {
+    stampRoot.rotation.y += dt * 0.6;
+  }
+
+  // Keep stamp light following pre-collection
+  if (!stampRoot.userData.isHud) {
+    stampLight.position.copy(stampRoot.position);
+  }
+}
+
+/* =====================================================================
+ * MAIN ANIMATION LOOP
+ * ===================================================================== */
+let running = false;
+function animate() {
+  if (!running) return;
+  requestAnimationFrame(animate);
+  const dt = Math.min(clock.getDelta(), 0.066);
+
+  if (orientationSupported) updateCameraFromDevice();
+
+  tickIdle(dt);
+  updateSearchAndPulse(dt);
+  if (countdown) tickCountdown();
+  if (collection) tickCollection(dt);
+  updateParticles(dt);
+
+  // Hand visibility timeout — drop "active" indicator and treat as no fist.
+  if (handVisible && performance.now() - lastHandSeenMs > 800) {
+    handVisible = false;
+    handIndicator.classList.remove('active');
+    handIndicator.classList.remove('fist');
+    handIndicatorVal.textContent = '—';
+    if (isFist) {
+      isFist = false;
+      if (state === STATES.GRABBING) {
+        cancelCountdown();
+        setState(STATES.STAMP_IN_VIEW);
+        statusBar.textContent = 'Grab it! ✋';
+        statusBar.classList.remove('hidden');
+      }
+    }
+  }
+
+  // If we've been staring at the stamp for a while with no hand ever
+  // detected, surface the manual fallback button so the user isn't stuck.
+  if (
+    mediapipeReady &&
+    !manualCollect.classList.contains('visible') &&
+    state === STATES.STAMP_IN_VIEW &&
+    performance.now() - stampInViewEnteredMs > HAND_TIMEOUT_FOR_FALLBACK_MS &&
+    performance.now() - lastHandSeenMs > HAND_TIMEOUT_FOR_FALLBACK_MS
+  ) {
+    showManualFallback();
+  }
+
+  // MediaPipe every other frame
+  frameToggle = (frameToggle + 1) % 2;
+  if (mediapipeReady && hands && cameraVideo.readyState >= 2 && frameToggle === 0) {
+    hands.send({ image: cameraVideo }).catch((err) => {
+      // Surface the first runtime error so we can see why detection died.
+      if (!mediapipeFailed) {
+        console.error('MediaPipe send error:', err);
+        mediapipeFailed = true;
+        showManualFallback();
+      }
+    });
+  }
+
+  renderer.render(scene, camera);
+}
+
+/* =====================================================================
+ * FACTS MODAL
+ * ===================================================================== */
+function buildFactList() {
+  factList.innerHTML = '';
+  FUN_FACTS.forEach((f, i) => {
+    const div = document.createElement('div');
+    div.className = 'factItem';
+    div.innerHTML = `<div class="num">${i + 1}</div><p>${f}</p>`;
+    factList.appendChild(div);
+  });
+  stampNameLbl.textContent = STAMP_NAME;
+  activityText.textContent = ACTIVITY_PROMPT;
+}
+function showFactsModal() {
+  buildFactList();
+  factsBackdrop.classList.add('visible');
+  factsModal.classList.add('visible');
+  setState(STATES.FACTS_SHOWN);
+}
+function hideFactsModal() {
+  factsBackdrop.classList.remove('visible');
+  factsModal.classList.remove('visible');
+  setState(STATES.COLLECTED);
+}
+
+dismissBtn.addEventListener('click', hideFactsModal);
+factsBackdrop.addEventListener('click', hideFactsModal);
+
+/* Swipe-down to dismiss */
+let touchStartY = null;
+factsModal.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 1) {
+    touchStartY = e.touches[0].clientY;
+    factsModal.style.transition = 'none';
+  }
+}, { passive: true });
+factsModal.addEventListener('touchmove', (e) => {
+  if (touchStartY === null) return;
+  const dy = e.touches[0].clientY - touchStartY;
+  if (dy > 0) {
+    factsModal.style.transform = `translateY(${dy}px)`;
+  }
+}, { passive: true });
+factsModal.addEventListener('touchend', (e) => {
+  if (touchStartY === null) return;
+  const dy = (e.changedTouches[0].clientY - touchStartY);
+  factsModal.style.transition = '';
+  factsModal.style.transform = '';
+  if (dy > 110) hideFactsModal();
+  touchStartY = null;
+}, { passive: true });
+
+/* Share */
+shareBtn.addEventListener('click', async () => {
+  const shareData = {
+    title: `I found ${STAMP_NAME}!`,
+    text: `I just collected ${STAMP_NAME} in the AR Stamp Hunt. Can you find it too?`,
+    url: location.href
+  };
+  try {
+    if (navigator.share) {
+      await navigator.share(shareData);
+    } else if (navigator.clipboard) {
+      await navigator.clipboard.writeText(`${shareData.text} ${shareData.url}`);
+      shareBtn.textContent = 'Copied!';
+      setTimeout(() => shareBtn.textContent = 'Share', 1400);
+    }
+  } catch (_) { /* user cancelled */ }
+});
+
+/* =====================================================================
+ * MANUAL FALLBACK
+ * ===================================================================== */
+manualCollectBtn.addEventListener('click', () => {
+  if (state === STATES.SEARCHING || state === STATES.STAMP_IN_VIEW) {
+    if (state === STATES.SEARCHING) setState(STATES.STAMP_IN_VIEW);
+    setState(STATES.GRABBING);
+    startCountdown();
+  }
+});
+
+/* =====================================================================
+ * BOOT SEQUENCE
+ * ===================================================================== */
+errorRetryBtn.addEventListener('click', () => location.reload());
+
+// Auto-boot on page load: kick off camera + orientation permission requests
+// immediately. On desktop browsers this just shows the standard permission
+// prompt. (iOS Safari requires these to be inside a user gesture, so if you
+// ever re-enable mobile testing, wrap this in a tap handler again.)
+function autoBoot() {
+  const orientPerm = requestOrientationPermission();
+  const camStream  = requestCameraStream();
+  boot(camStream, orientPerm);
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', autoBoot, { once: true });
+} else {
+  autoBoot();
+}
+
+async function boot(camStreamPromise, orientPermPromise) {
+  hideError();
+  loadingScreen.classList.remove('hidden');
+  loadingText.textContent = 'Requesting camera…';
+
+  const camOK = await attachCameraStream(camStreamPromise);
+  if (!camOK) return;
+
+  loadingText.textContent = 'Setting up the world…';
+  initThree();
+  onResize();
+
+  loadingText.textContent = 'Loading the stamp…';
+  try {
+    await loadStamp();
+  } catch (err) {
+    showError(
+      'Could not load stamp',
+      'The stamp asset failed to load. Check your connection and try again.',
+      () => location.reload()
+    );
+    return;
+  }
+
+  loadingText.textContent = 'Calibrating motion…';
+  compassHint.classList.add('visible');
+  await initDeviceOrientation(orientPermPromise);
+
+  // Defensive: if orientation is supported but the very first event arrived
+  // before stampRoot was ready (or any other reason the in-handler placement
+  // didn't latch), place the stamp now using the latest camera orientation.
+  if (orientationSupported && !stampPlacedFromOrientation) {
+    placeStampOffscreenFromCurrentView();
+  }
+
+  loadingText.textContent = 'Spinning up hand tracking…';
+  await initMediaPipe();
+
+  // No real gyro available (desktop / privacy mode / denied) — start the
+  // optical-flow webcam-motion estimator so the camera still rotates as the
+  // user moves the laptop / webcam. `startOpticalFlow()` flips
+  // `orientationSupported = true` once it's running.
+  if (!orientationSupported) {
+    startOpticalFlow();
+  }
+  // Ensure the stamp ends up off-axis. `placeStampOffscreenFromCurrentView`
+  // is idempotent so this is safe even if the in-handler placement already
+  // latched.
+  if (!stampPlacedFromOrientation) {
+    placeStampOffscreenFromCurrentView();
+  }
+
+  loadingScreen.classList.add('hidden');
+  setState(STATES.SEARCHING);
+  running = true;
+  clock.start();
+  animate();
+}
+
+/* Global error guard — if something blows up post-boot, surface it. */
+window.addEventListener('error', (e) => {
+  console.error('Runtime error:', e.error || e.message);
+});
+</script>
+
+</body>
+</html>
