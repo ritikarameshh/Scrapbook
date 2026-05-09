@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compile hidden gem target</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a1a; color: #f0f0f0;
+      min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    }
+    .card {
+      background: #2a2a2a; border-radius: 16px; padding: 36px 40px;
+      max-width: 480px; width: 90%; text-align: center;
+    }
+    h1 { font-size: 1.3rem; font-weight: 600; margin-bottom: 8px; }
+    p  { font-size: 0.9rem; color: #aaa; line-height: 1.5; margin-bottom: 24px; }
+    #preview { width: 100%; max-height: 240px; object-fit: contain; border-radius: 8px; margin-bottom: 20px; display: none; }
+    .btn {
+      display: inline-block; padding: 12px 28px; border-radius: 999px;
+      font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none;
+      transition: opacity 150ms;
+    }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: #e26e5f; color: #fff; }
+    .btn-success { background: #98a773; color: #fff; }
+    #status { margin-top: 20px; font-size: 0.85rem; color: #aaa; min-height: 1.5em; }
+    .progress-bar { background: #444; border-radius: 999px; height: 6px; margin-top: 12px; overflow: hidden; display: none; }
+    .progress-fill { height: 100%; background: #98a773; border-radius: 999px; width: 0%; transition: width 100ms linear; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Compile hidden gem target</h1>
+    <p>
+      Generates <code>targets-hiddengem.mind</code> from <code>Assets/HiddenGem.png</code>
+      so the MindAR validator can recognise your hidden gem location.
+      Run once; download the file and place it in <code>Assets/</code>.
+    </p>
+    <img id="preview" alt="HiddenGem preview" />
+    <div>
+      <button id="compile-btn" class="btn btn-primary">Compile targets-hiddengem.mind</button>
+    </div>
+    <div class="progress-bar" id="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+    <div id="status">Loading image…</div>
+  </div>
+
+  <script src="mindar-image-three.prod.js"></script>
+  <script>
+    const statusEl  = document.getElementById('status');
+    const btn       = document.getElementById('compile-btn');
+    const preview   = document.getElementById('preview');
+    const bar       = document.getElementById('progress-bar');
+    const fill      = document.getElementById('progress-fill');
+
+    let loadedImage = null;
+
+    // Load the hidden gem image as an HTMLImageElement for the compiler.
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      loadedImage = img;
+      preview.src = img.src;
+      preview.style.display = 'block';
+      statusEl.textContent = 'Image loaded — ready to compile.';
+      btn.disabled = false;
+    };
+    img.onerror = () => {
+      statusEl.textContent = 'Could not load Assets/HiddenGem.png — make sure the dev server is running and the file exists.';
+      btn.disabled = true;
+    };
+    btn.disabled = true;
+    img.src = 'Assets/HiddenGem.png';
+
+    btn.addEventListener('click', async () => {
+      if (!loadedImage) return;
+      btn.disabled = true;
+      bar.style.display = 'block';
+      statusEl.textContent = 'Compiling…';
+
+      try {
+        const compiler = new MINDAR.IMAGE.Compiler();
+        await compiler.compileImageTargets([loadedImage], (progress) => {
+          const pct = Math.round(progress * 100);
+          fill.style.width = pct + '%';
+          statusEl.textContent = `Compiling… ${pct}%`;
+        });
+        const buffer = await compiler.exportData();
+
+        // Trigger download.
+        const blob = new Blob([buffer]);
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = 'targets-hiddengem.mind';
+        a.click();
+        URL.revokeObjectURL(url);
+
+        fill.style.width = '100%';
+        statusEl.textContent = '✓ Done! Move the downloaded file to Assets/targets-hiddengem.mind and reload the app.';
+        btn.textContent = 'Compile again';
+        btn.className = 'btn btn-success';
+        btn.disabled = false;
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + err.message;
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

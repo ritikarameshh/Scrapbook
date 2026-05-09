@@ -104,36 +104,68 @@ document.addEventListener('click', (e) => {
 });
 
 // ============ AR — MindAR A-Frame image tracking ============
-let arPhase          = 0; // 0 = idle | 1 = scanning | 2 = hunting
-let arSceneEl        = null;
-let gemTargetVisible = false; // set by targetFound/targetLost events in MindAR validator
+let arPhase   = 0; // 0 = idle | 1 = scanning | 2 = hunting
+let arSceneEl = null;
 
 // Hidden-gem demo: when true, Phase 1 uses outline-alignment instead of plain
 // MindAR image detection. See docs/landmark-data-model.md for the long-term
 // per-landmark data shape this stand-in flag is meant to grow into.
 const HIDDEN_GEM_DEMO        = true;
-const ALIGNMENT_THRESHOLD    = 0.05;   // 5% — gates Phase 2
+const ALIGNMENT_THRESHOLD    = 0.40;   // 40% — gates Phase 2
 const ALIGNMENT_SUSTAIN_MS   = 1000;
 const ALIGNMENT_TICK_MS      = 100;    // visual validator runs at 10 Hz
 const VISUAL_GRID_W          = 192;    // downsampled Sobel grid; cheap on phones
 const VISUAL_GRID_H          = 256;
 const VISUAL_EDGE_THRESHOLD  = 60;     // 0..255
 
-// Resolves once on URL load — safe to read on every startAR.
-function getValidatorMode() {
-  const p = new URLSearchParams(window.location.search).get('validator');
-  return p === 'mindar' ? 'mindar' : 'visual';
-}
-function getOutlineMode() {
-  const p = new URLSearchParams(window.location.search).get('outline');
-  return p === 'auto' ? 'auto' : 'svg';
-}
+// In-app toggles — switched via the dev-controls strip shown during outline Phase 1.
+let validatorMode = 'visual'; // 'visual' | 'mindar'
+let outlineMode   = 'svg';    // 'svg'    | 'auto'
+
 function getOutlineSrc() {
-  // Default outline asset paths — update these when a real HiddenGem.png lands.
-  // The .auto.png is produced by `npm run gen-outlines`.
-  return getOutlineMode() === 'auto'
+  return outlineMode === 'auto'
     ? 'Assets/HiddenGem.auto.png'
     : 'Assets/hidden-gem-outline.svg';
+}
+
+function setupDevToggles() {
+  const vBtn = document.getElementById('toggle-validator');
+  const oBtn = document.getElementById('toggle-outline');
+  if (!vBtn || !oBtn) return;
+
+  function syncButtons() {
+    vBtn.textContent = validatorMode.toUpperCase();
+    vBtn.dataset.active = validatorMode;
+    oBtn.textContent = outlineMode.toUpperCase();
+    oBtn.dataset.active = outlineMode;
+  }
+
+  vBtn.addEventListener('click', () => {
+    validatorMode = validatorMode === 'visual' ? 'mindar' : 'visual';
+    syncButtons();
+    if (arPhase === 1 && HIDDEN_GEM_DEMO) restartAlignmentLoop();
+  });
+
+  oBtn.addEventListener('click', () => {
+    outlineMode = outlineMode === 'svg' ? 'auto' : 'svg';
+    syncButtons();
+    // Update the outline image live without restarting the loop.
+    const src = getOutlineSrc();
+    const imgEl = document.getElementById('outline-img');
+    if (imgEl) imgEl.style.setProperty('--outline-src', `url("${src}")`);
+    if (validatorMode === 'visual') buildOutlineMask(src);
+  });
+
+  syncButtons();
+}
+
+function restartAlignmentLoop() {
+  stopAlignmentLoops();
+  alignmentSustainStart = 0;
+  const stage = document.querySelector('#ar-phase-outline .outline-stage');
+  if (stage) { stage.dataset.state = 'idle'; stage.style.setProperty('--sustain', '0'); }
+  if (validatorMode === 'visual') startVisualAlignment();
+  else                            startMindARAlignment();
 }
 
 // World-locked stamp: billboard each frame so the disc faces the phone (portrait-friendly).
@@ -305,16 +337,18 @@ let outlineMaskCanvas      = null;   // pre-binarized outline edge mask, used by
 let visualSampleCanvas     = null;   // reused per tick to avoid GC churn
 
 function mountOutlineSceneInto(container) {
-  const validator = getValidatorMode();
-  const outlineSrc = getOutlineSrc();
+  prepareOutlineUI(getOutlineSrc());
 
-  prepareOutlineUI(outlineSrc, validator);
-
-  // Mount the same MindAR scene template — it handles camera + error UX. For the
-  // visual validator we just ignore the targetFound events.
+  // Visual validator: targets.mind is only used for the camera feed; detections are ignored.
+  // MindAR validator: targets-hiddengem.mind must contain ONLY HiddenGem.png (index 0)
+  //   — compile it at https://hiukim.github.io/mind-ar-js-doc/tools/compile
+  //     then save to Assets/targets-hiddengem.mind.
+  const mindSrc = validatorMode === 'mindar'
+    ? './Assets/targets-hiddengem.mind'
+    : './targets.mind';
   container.innerHTML = `
     <a-scene id="ar-scene" embedded
-      mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; uiLoading: no; uiError: no;"
+      mindar-image="imageTargetSrc: ${mindSrc}; uiScanning: no; uiLoading: no; uiError: no;"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: false"
       renderer="alpha: true"
@@ -322,7 +356,12 @@ function mountOutlineSceneInto(container) {
       <a-assets></a-assets>
       <a-light type="ambient" color="#ffffff" intensity="0.85"></a-light>
       <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-      <a-entity id="gem-anchor" mindar-image-target="targetIndex: 1"></a-entity>
+      <a-entity id="esb-anchor" mindar-image-target="targetIndex: 0">
+        <a-entity class="gem-corner" data-corner="tl" position="-0.5  0.5 0"></a-entity>
+        <a-entity class="gem-corner" data-corner="tr" position=" 0.5  0.5 0"></a-entity>
+        <a-entity class="gem-corner" data-corner="bl" position="-0.5 -0.5 0"></a-entity>
+        <a-entity class="gem-corner" data-corner="br" position=" 0.5 -0.5 0"></a-entity>
+      </a-entity>
       <a-entity id="stamp-entity" visible="false" stamp-billboard>
         <a-circle radius="0.34" position="0 0 0"
           material="shader: flat; color: #E26E5F; side: double"></a-circle>
@@ -337,16 +376,16 @@ function mountOutlineSceneInto(container) {
   arSceneEl.addEventListener('renderstart', () => {
     hideARCameraError();
     if (arSceneEl?.renderer) arSceneEl.renderer.setClearColor(0x000000, 0);
-    // Wire targetFound/targetLost for the MindAR validator (HiddenGem at index 1).
+    // Wire targetFound/targetLost for the MindAR validator.
     gemTargetVisible = false;
-    const gemAnchor = document.getElementById('gem-anchor');
-    if (gemAnchor) {
-      gemAnchor.addEventListener('targetFound', () => { gemTargetVisible = true; });
-      gemAnchor.addEventListener('targetLost',  () => { gemTargetVisible = false; });
+    const anchor = document.getElementById('esb-anchor');
+    if (anchor) {
+      anchor.addEventListener('targetFound', () => { gemTargetVisible = true; });
+      anchor.addEventListener('targetLost',  () => { gemTargetVisible = false; });
     }
-    // Camera is live — kick off the chosen alignment loop.
-    if (validator === 'visual') startVisualAlignment();
-    else                        startMindARAlignment();
+    // Camera is live — kick off whichever loop is currently selected.
+    if (validatorMode === 'visual') startVisualAlignment();
+    else                            startMindARAlignment();
   }, { once: true });
 
   arSceneEl.addEventListener('arError', (e) => {
@@ -356,6 +395,8 @@ function mountOutlineSceneInto(container) {
       sub = 'Serve the app over HTTPS or localhost.';
     } else if (code === 'VIDEO_FAIL') {
       sub = 'Try “Enable camera” again, open in Safari, or use a real device.';
+    } else if (code === 'INVALID_TARGET_URL' || code === 'TARGET_LOAD_FAIL') {
+      sub = 'targets-hiddengem.mind not found — visit /compile.html in your browser to generate it first.';
     }
     showARCameraError(sub);
   });
@@ -363,13 +404,12 @@ function mountOutlineSceneInto(container) {
   setARPhaseUI(1);
 }
 
-function prepareOutlineUI(outlineSrc, validator) {
+function prepareOutlineUI(outlineSrc) {
   alignmentLocked = false;
   alignmentSustainStart = 0;
 
   const stage   = document.querySelector('#ar-phase-outline .outline-stage');
   const imgEl   = document.getElementById('outline-img');
-  const modeEl  = document.getElementById('align-mode');
   const scoreEl = document.getElementById('align-score');
   const hintEl  = document.getElementById('outline-hint');
 
@@ -378,12 +418,11 @@ function prepareOutlineUI(outlineSrc, validator) {
     stage.style.setProperty('--sustain', '0');
   }
   if (imgEl)   imgEl.style.setProperty('--outline-src', `url("${outlineSrc}")`);
-  if (modeEl)  modeEl.textContent = validator;
   if (scoreEl) scoreEl.textContent = '—';
   if (hintEl)  hintEl.textContent = 'Match the outline to what you see';
 
-  // Pre-build the outline edge mask for the visual validator (one-time per mount).
-  if (validator === 'visual') buildOutlineMask(outlineSrc);
+  // Pre-build the outline edge mask for the visual validator.
+  buildOutlineMask(outlineSrc);
 }
 
 // Apply a single alignment score (0..1, where 0 = perfect) to the UI and
@@ -395,7 +434,7 @@ function applyAlignmentScore(error) {
   const scoreEl = document.getElementById('align-score');
 
   let state;
-  if (error >= 0.30)                        state = 'far';
+  if (error >= 0.70)                        state = 'far';
   else if (error >= ALIGNMENT_THRESHOLD)    state = 'near';
   else                                       state = 'aligned';
 
@@ -429,7 +468,7 @@ function onAlignmentLocked() {
   try { navigator.vibrate?.(80); } catch (_) {}
 
   const validator = getValidatorMode();
-  const anchorEl = (validator === 'mindar') ? document.getElementById('gem-anchor') : null;
+  const anchorEl = (validator === 'mindar') ? document.getElementById('esb-anchor') : null;
 
   // Brief lock-in beat, then hand off to the existing Phase 2 hunt.
   setTimeout(() => transitionToPhase2(anchorEl), 420);
@@ -569,16 +608,63 @@ function iouScore(a, b) {
   return union === 0 ? 0 : inter / union;
 }
 
-// --- Validator B: MindAR event-based detection -------------------------------
+// --- Validator B: MindAR projected corners -----------------------------------
 
 function startMindARAlignment() {
   if (alignmentTickerId !== null) stopAlignmentLoops();
 
-  // gemTargetVisible is set by targetFound/targetLost events wired in mountOutlineSceneInto.
-  // Detection = aligned; no position/scale math needed.
+  // Cheaper than registering an A-Frame component since we already have a tick driver.
   alignmentTickerId = setInterval(() => {
     if (alignmentLocked || arPhase !== 1) return;
-    applyAlignmentScore(gemTargetVisible ? 0 : 1);
+    const anchor = document.getElementById('esb-anchor');
+    const cameraEl = arSceneEl?.querySelector('[camera]');
+    if (!anchor || !cameraEl) return;
+    const camera = cameraEl.getObject3D('camera');
+    if (!camera) return;
+
+    const corners = anchor.querySelectorAll('.gem-corner');
+    if (corners.length !== 4) return;
+
+    // If any corner hasn't initialised in 3D space, the target hasn't been seen yet.
+    let anyTracked = false;
+    const pts = [];
+    const v = new AFRAME.THREE.Vector3();
+    corners.forEach(c => {
+      if (!c.object3D) return;
+      c.object3D.getWorldPosition(v);
+      if (Math.hypot(v.x, v.y, v.z) > 0.001) anyTracked = true;
+      const projected = v.clone().project(camera);
+      pts.push({
+        x: (projected.x + 1) * 0.5 * window.innerWidth,
+        y: (1 - projected.y) * 0.5 * window.innerHeight,
+        z: projected.z,
+      });
+    });
+
+    if (!anyTracked) {
+      applyAlignmentScore(1);   // building isn't seen yet — keep state in 'far'
+      return;
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const p of pts) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+    const projW = maxX - minX, projH = maxY - minY;
+    const projCx = (minX + maxX) / 2, projCy = (minY + maxY) / 2;
+
+    const target = readOutlineTargetRect();
+    if (!target) return;
+    const targetCx = target.left + target.width  / 2;
+    const targetCy = target.top  + target.height / 2;
+
+    const dx = Math.abs(projCx - targetCx) / window.innerWidth;
+    const dy = Math.abs(projCy - targetCy) / window.innerHeight;
+    const ds = Math.abs(projH - target.height) / target.height;
+    applyAlignmentScore(Math.max(dx, dy, ds));
   }, ALIGNMENT_TICK_MS);
 }
 
@@ -637,7 +723,6 @@ function stopAR() {
   stopAlignmentLoops();
   alignmentLocked = false;
   alignmentSustainStart = 0;
-  gemTargetVisible = false;
 
   if (arSceneEl) {
     const s = arSceneEl;
@@ -686,3 +771,4 @@ function collectStamp() {
 
 // ============ Boot ============
 show('splash');
+setupDevToggles();
