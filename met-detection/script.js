@@ -11,7 +11,9 @@ import { MindARThree } from 'mindar-image-three';
 // drop the .mind file in as targets.mind. order in this array MUST match the
 // order i uploaded them to the compiler (index 0 = first image, etc).
 const MINDAR_FILE = 'targets.mind';
-const MINDAR_TARGETS = ['the_met'];
+// targets.mind has 3 met images compiled in. all 3 indices map to "the_met"
+// so any of the 3 images triggers the same modal.
+const MINDAR_TARGETS = ['the_met', 'the_met', 'the_met'];
 
 // ---- gps setup ----
 // coords + radius in meters per landmark.
@@ -121,7 +123,7 @@ async function startCamera(screenEl) {
     mindarRunning = true;
     if (perm) perm.hidden = true;
     setStatus('Scanning…');
-    setConfidence(0, 'Point at a printed image — or just walk up to the place');
+    setConfidence(0, 'Scanning your location…');
 
     startGeoWatch();
   } catch (err) {
