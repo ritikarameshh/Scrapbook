@@ -279,27 +279,6 @@
     100% { transform: translate(-50%, -50%) scale(14); opacity: 0; border-width: 1px; }
   }
 
-  /* HUD slot */
-  #hudSlot {
-    position: fixed;
-    bottom: calc(var(--safe-bottom) + 18px);
-    right: 18px;
-    z-index: 11;
-    width: 84px;
-    height: 84px;
-    border-radius: 22px;
-    background: var(--glass);
-    border: 1px solid var(--glass-stroke);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 12px 30px rgba(0,0,0,0.5), 0 0 28px rgba(168,85,247,0.25);
-    opacity: 0;
-    transform: scale(0.6);
-    pointer-events: none;
-    transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-  #hudSlot.visible { opacity: 1; transform: scale(1); }
-
   @keyframes float {
     0%, 100% { transform: translateY(0) rotate(-4deg); }
     50% { transform: translateY(-12px) rotate(4deg); }
@@ -645,9 +624,6 @@
 <!-- Shockwave -->
 <div id="shockwave"></div>
 
-<!-- HUD collected stamp slot (visual frame; the 3D stamp itself parents to camera) -->
-<div id="hudSlot"></div>
-
 <!-- Manual collect fallback -->
 <div id="manualCollect">
   <button class="primaryBtn" id="manualCollectBtn">Tap to Collect</button>
@@ -808,8 +784,6 @@ const countdownLabel   = document.getElementById('countdownLabel');
 
 const flashOverlay = document.getElementById('flashOverlay');
 const shockwave    = document.getElementById('shockwave');
-
-const hudSlot          = document.getElementById('hudSlot');
 
 const loadingScreen = document.getElementById('loadingScreen');
 const loadingText   = document.getElementById('loadingText');
@@ -1022,7 +996,7 @@ let orientationSupported = false;
 let orientation = null;
 let screenOrient = 0;
 let stampPlacedFromOrientation = false;
-const _camUpForStampClamp = new THREE.Vector3();
+const _stampProjClamp = new THREE.Vector3();
 
 /* Place the stamp at a horizontal offset from the camera's current forward
  * vector so the user has to physically pan to find it. Idempotent: the first
@@ -1045,22 +1019,39 @@ function placeStampOffscreenFromCurrentView() {
   forward.applyAxisAngle(new THREE.Vector3(0, 1, 0), angle);
   STAMP_POSITION.set(forward.x * 2.4, 0.2, forward.z * 2.4);
 
-  /* Screen-space clamp: if the projected stamp sits too high (roof/sky),
-   * step it downward along −camera up in world space until NDC y is in range. */
+  /* Screen-space clamp: keep the stamp out of the top "sky" band by lowering
+   * world Y only (safe). Stepping along −camera up could shove the mesh behind
+   * the camera, which looks like a missing stamp + wild arrow hints. */
   if (camera) {
-    _camUpForStampClamp.set(0, 1, 0).applyQuaternion(camera.quaternion);
-    for (let i = 0; i < 28; i++) {
-      _ndc.copy(STAMP_POSITION).project(camera);
-      if (_ndc.y <= STAMP_MAX_SCREEN_NDC_Y) break;
-      STAMP_POSITION.addScaledVector(_camUpForStampClamp, -STAMP_NDC_CLAMP_STEP);
+    const preX = STAMP_POSITION.x;
+    const preZ = STAMP_POSITION.z;
+    const preY = STAMP_POSITION.y;
+    for (let i = 0; i < 40; i++) {
+      _stampProjClamp.copy(STAMP_POSITION).project(camera);
+      if (_stampProjClamp.y <= STAMP_MAX_SCREEN_NDC_Y) break;
+      STAMP_POSITION.y -= STAMP_NDC_CLAMP_STEP;
     }
     STAMP_POSITION.y = Math.max(STAMP_POSITION.y, STAMP_MIN_WORLD_Y);
+    _stampProjClamp.copy(STAMP_POSITION).project(camera);
+    const stillVisible = _stampProjClamp.z < 1;
+    if (!stillVisible) {
+      STAMP_POSITION.set(preX, preY, preZ);
+    }
   }
 
   stampRoot.position.copy(STAMP_POSITION);
   stampRoot.userData.basePosition.copy(STAMP_POSITION);
   stampPlacedFromOrientation = true;
   return true;
+}
+
+/* shortest-path lerp on 0..360° headings — damps compass jitter on phones */
+const COMPASS_SMOOTH_T = 0.17;
+let compassSmoothSeeded = false;
+function lerpAngleDeg(from, to, t) {
+  let d = ((to - from + 540) % 360) - 180;
+  const r = from + d * t;
+  return ((r % 360) + 360) % 360;
 }
 
 /* Kick off the iOS permission prompt synchronously from a user-gesture
@@ -1111,9 +1102,18 @@ async function initDeviceOrientation(permissionPromise) {
         resolve(true);
       }
       orientation = orientation || { alpha: 0, beta: 0, gamma: 0 };
-      // Keep the previous alpha when this event has none, so the camera's
-      // Y rotation doesn't snap to 0 mid-stream.
-      if (heading != null) orientation.alpha = heading;
+      if (heading != null) {
+        if (!compassSmoothSeeded) {
+          orientation.alpha = heading;
+          compassSmoothSeeded = true;
+        } else {
+          orientation.alpha = lerpAngleDeg(
+            orientation.alpha,
+            heading,
+            COMPASS_SMOOTH_T
+          );
+        }
+      }
       if (e.beta  != null) orientation.beta  = e.beta;
       if (e.gamma != null) orientation.gamma = e.gamma;
 
@@ -1666,7 +1666,6 @@ function tickCollection(dt) {
     if (sT >= 1) {
       collection.phase = 'settle';
       collection.settleStartSec = clock.elapsedTime;
-      hudSlot.classList.add('visible');
       setState(STATES.COLLECTED);
     }
   }
@@ -1876,10 +1875,19 @@ function screenToCameraLocal(sx, sy, depth) {
   return new THREE.Vector3(ndcX * halfW, ndcY * halfH, -depth);
 }
 
+/* Anchor matches the former #hudSlot layout (84×84, bottom-right) — no DOM frame. */
+const HUD_SLOT_PX = 84;
+const HUD_SLOT_MARGIN_RIGHT = 18;
+const HUD_SLOT_MARGIN_BOTTOM = 18;
+
 function recomputeHudLocalPosition() {
-  const r = hudSlot.getBoundingClientRect();
-  const cx = r.left + r.width / 2;
-  const cy = r.top  + r.height / 2;
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const safeBottom = parseFloat(
+    getComputedStyle(document.documentElement).getPropertyValue('--safe-bottom')
+  ) || 0;
+  const cx = w - HUD_SLOT_MARGIN_RIGHT - HUD_SLOT_PX / 2;
+  const cy = h - safeBottom - HUD_SLOT_MARGIN_BOTTOM - HUD_SLOT_PX / 2;
   HUD_LOCAL_POSITION = screenToCameraLocal(cx, cy, HUD_DEPTH);
 }
 
