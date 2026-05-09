@@ -1,5 +1,7 @@
 /**
- * Phase 3 — gem pins in the shared MindAR A-Frame scene (magic-window camera).
+ * Phase 3 — gem “pins” as screen-space DOM on top of the MindAR camera pass-through.
+ * MindAR’s WebGL compositor often does not draw arbitrary A-Frame entities over the video feed,
+ * so 3D pins were invisible; HTML pins in #gem-pin-layer stay in the UI stack reliably.
  */
 
 import { HIDDEN_GEMS, PHASE3_PIN_LAYOUT } from './ar-config.js';
@@ -7,163 +9,76 @@ import { getArPhase } from './session-state.js';
 
 let currentGemId = null;
 let gemToastTimer = null;
+let domPinClickBound = false;
 
 export function getCurrentGemId() {
   return currentGemId;
 }
 
-export function ensureGemPinComponentRegistered() {
-  if (typeof AFRAME === 'undefined' || AFRAME.components['gem-pin']) return;
-  AFRAME.registerComponent('gem-pin', {
-    schema: { id: { type: 'string' } },
-    init() {
-      this.onClick = () => {
-        if (getArPhase() !== 3) return;
-        playPinClickFx(this.el);
-        openGemCard(this.data.id);
-      };
-      this.el.addEventListener('click', this.onClick);
-    },
-    remove() {
-      this.el.removeEventListener('click', this.onClick);
-    },
-  });
+function clearDomPinLayer() {
+  const layer = document.getElementById('gem-pin-layer');
+  if (layer) {
+    layer.innerHTML = '';
+    layer.setAttribute('aria-hidden', 'true');
+  }
 }
 
-function playPinClickFx(pinEl) {
-  const target = pinEl.querySelector('[gltf-model]') || pinEl;
-  const baseScale = target.getAttribute('scale') || { x: 0.24, y: 0.24, z: 0.24 };
-  const bx = baseScale.x ?? 0.24;
-  const by = baseScale.y ?? 0.24;
-  const bz = baseScale.z ?? 0.24;
-  const sx = bx * 0.7;
-  const sy = by * 0.7;
-  const sz = bz * 0.7;
+function clearAframePinsIfAny(sceneEl) {
+  if (!sceneEl) return;
+  sceneEl.querySelectorAll('.gem-pin').forEach((n) => n.parentNode?.removeChild(n));
+}
 
-  target.removeAttribute('animation__click');
-  target.removeAttribute('animation__clickback');
-  target.setAttribute('animation__click', {
-    property: 'scale',
-    to: `${sx} ${sy} ${sz}`,
-    dur: 110,
-    easing: 'easeOutQuad',
-  });
-  target.setAttribute('animation__clickback', {
-    property: 'scale',
-    to: `${bx} ${by} ${bz}`,
-    dur: 180,
-    delay: 110,
-    easing: 'easeOutBack',
+function bindDomPinLayerOnce() {
+  if (domPinClickBound) return;
+  const layer = document.getElementById('gem-pin-layer');
+  if (!layer) return;
+  domPinClickBound = true;
+  layer.addEventListener('click', (e) => {
+    const pin = e.target.closest('.gem-pin-dom');
+    if (!pin || getArPhase() !== 3) return;
+    e.stopPropagation();
+    openGemCard(pin.dataset.gemId);
   });
 }
 
 /**
- * MindAR + look-controls: world-space pins + camera matrix remaps were unreliable (pins off-screen).
- * Parent pins to the *active* camera in local space so they stay in the frustum in front of the user.
+ * @param {import('aframe').Entity | null} sceneEl — optional; clears any legacy A-Frame pins
  */
-function getActiveCameraEl(scene) {
-  if (!scene) return null;
-  return scene.camera?.el || scene.querySelector('#ar-flow-camera') || scene.querySelector('a-camera');
-}
+export function activatePinsPhase(sceneEl) {
+  bindDomPinLayerOnce();
+  clearAframePinsIfAny(sceneEl);
+  clearDomPinLayer();
 
-/** Keep cursor / raycaster on whichever camera is actually rendering (MindAR may swap active camera). */
-function ensureRaycasterOnActiveCamera(scene) {
-  const camEl = getActiveCameraEl(scene);
-  if (!camEl) return;
-  const ray = scene.querySelector('[raycaster]');
-  if (ray && ray.parentNode !== camEl) camEl.appendChild(ray);
-  const cursor = scene.querySelector('[cursor]');
-  if (cursor && cursor !== ray && cursor.parentNode !== camEl) camEl.appendChild(cursor);
-  const rayComp = ray?.components?.raycaster;
-  if (rayComp && typeof rayComp.setDirty === 'function') rayComp.setDirty();
-}
+  const layer = document.getElementById('gem-pin-layer');
+  if (!layer) return;
 
-function spawnGemPinsInto(scene) {
-  const parent = getActiveCameraEl(scene) || scene.querySelector('#phase3-world-root') || scene;
-  ensureRaycasterOnActiveCamera(scene);
+  layer.setAttribute('aria-hidden', 'false');
 
   HIDDEN_GEMS.forEach((gem, i) => {
-    const { angleDeg, radius, y } = PHASE3_PIN_LAYOUT[i] || PHASE3_PIN_LAYOUT[0];
-    const a = (angleDeg * Math.PI) / 180;
-    const x = Math.sin(a) * radius;
-    const z = -Math.cos(a) * radius;
+    const row = PHASE3_PIN_LAYOUT[i] || PHASE3_PIN_LAYOUT[0];
+    const { angleDeg, radius } = row;
+    const rad = (angleDeg * Math.PI) / 180;
+    // Map authored polar layout (radius ~1.1m) to screen vmin fan in front of the user.
+    const spread = 34 * radius;
+    const xVmin = Math.sin(rad) * spread;
+    const yVmin = -Math.cos(rad) * spread * 0.65 + 10;
 
-    const pin = document.createElement('a-entity');
-    pin.classList.add('gem-pin');
-    pin.setAttribute('gem-pin', `id: ${gem.id}`);
-    pin.setAttribute('position', `${x} ${y} ${z}`);
-    pin.setAttribute('visible', 'true');
-    pin.setAttribute('geometry', { primitive: 'sphere', radius: 0.55 });
-    pin.setAttribute('material', {
-      shader: 'flat',
-      color: '#ffffff',
-      opacity: 0,
-      transparent: true,
-      depthWrite: false,
-    });
-
-    pin.setAttribute('animation__bob', {
-      property: 'position',
-      to: `${x} ${y + 0.08} ${z}`,
-      dir: 'alternate',
-      dur: 1400 + i * 120,
-      easing: 'easeInOutSine',
-      loop: true,
-    });
-
-    const model = document.createElement('a-entity');
-    model.setAttribute('gltf-model', 'url(./Assets/pin.gltf)');
-    model.setAttribute('scale', '0.24 0.24 0.24');
-    model.addEventListener('model-loaded', (ev) => {
-      const obj = ev.detail.model;
-      obj.traverse((node) => {
-        if (node.isMesh && node.material) {
-          node.material = node.material.clone();
-          node.material.color = new AFRAME.THREE.Color(gem.color);
-          node.material.metalness = 0.1;
-          node.material.roughness = 0.55;
-          node.renderOrder = 40;
-        }
-      });
-    });
-    model.addEventListener('model-error', () => {
-      const disc = document.createElement('a-circle');
-      disc.setAttribute('radius', '0.34');
-      disc.setAttribute('material', `shader: flat; color: ${gem.color}; side: double`);
-      pin.appendChild(disc);
-    });
-    pin.appendChild(model);
-
-    model.setAttribute('animation__spin', {
-      property: 'rotation',
-      from: '0 0 0',
-      to: '0 360 0',
-      dur: 6000,
-      easing: 'linear',
-      loop: true,
-    });
-
-    parent.appendChild(pin);
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'gem-pin-dom';
+    btn.dataset.gemId = gem.id;
+    btn.setAttribute('aria-label', `${gem.type}: ${gem.title}`);
+    btn.style.left = `calc(50% + ${xVmin.toFixed(2)}vmin)`;
+    btn.style.top = `calc(54% + ${yVmin.toFixed(2)}vmin)`;
+    btn.style.background = gem.color;
+    layer.appendChild(btn);
   });
-}
-
-/** @param {import('aframe').Entity} sceneEl */
-export function activatePinsPhase(sceneEl) {
-  ensureGemPinComponentRegistered();
-  if (!sceneEl) return;
-  sceneEl.querySelectorAll('.gem-pin').forEach((n) => n.parentNode?.removeChild(n));
-  const run = () => {
-    spawnGemPinsInto(sceneEl);
-    requestAnimationFrame(() => ensureRaycasterOnActiveCamera(sceneEl));
-  };
-  if (sceneEl.hasLoaded) run();
-  else sceneEl.addEventListener('loaded', run, { once: true });
 }
 
 /** @param {import('aframe').Entity | null} sceneEl */
 export function deactivatePinsPhase(sceneEl) {
-  if (!sceneEl) return;
-  sceneEl.querySelectorAll('.gem-pin').forEach((n) => n.parentNode?.removeChild(n));
+  clearDomPinLayer();
+  clearAframePinsIfAny(sceneEl);
 }
 
 export function openGemCard(id) {
