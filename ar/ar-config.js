@@ -24,8 +24,14 @@ export const HIDDEN_GEMS = [
 
 export const SECOND_SPOT_GEM_ID = HIDDEN_GEMS[1].id;
 
+/** glTF pin visual scale (world units) */
+export const PHASE3_PIN_MODEL_SCALE = 0.14;
+
+/** Invisible sphere for tap raycasts; keep roughly ~2× visual footprint */
+export const PHASE3_PIN_HIT_SPHERE_RADIUS = 0.28;
+
 export const PHASE3_PIN_LAYOUT = [
-  { angleDeg: -34, radius: 1.55, y: 0.12 },
-  { angleDeg: 0, radius: 1.72, y: 0.38 },
-  { angleDeg: 34, radius: 1.55, y: -0.12 },
+  { angleDeg: -40, radius: 1.38, y: 0.12 },
+  { angleDeg: 0, radius: 1.52, y: 0.42 },
+  { angleDeg: 40, radius: 1.38, y: -0.12 },
 ];

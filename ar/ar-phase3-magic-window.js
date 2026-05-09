@@ -4,7 +4,12 @@
  * visually (stream keeps running) and stack a classic magic-window scene on top.
  */
 
-import { HIDDEN_GEMS, PHASE3_PIN_LAYOUT } from './ar-config.js';
+import {
+  HIDDEN_GEMS,
+  PHASE3_PIN_HIT_SPHERE_RADIUS,
+  PHASE3_PIN_LAYOUT,
+  PHASE3_PIN_MODEL_SCALE,
+} from './ar-config.js';
 import * as mindarHost from './ar-mindar-host.js';
 import { getArPhase } from './session-state.js';
 
@@ -35,10 +40,11 @@ function ensureGemPinComponent() {
 
 function playPinClickFx(pinEl) {
   const target = pinEl.querySelector('[gltf-model]') || pinEl;
-  const baseScale = target.getAttribute('scale') || { x: 0.14, y: 0.14, z: 0.14 };
-  const bx = baseScale.x ?? 0.14;
-  const by = baseScale.y ?? 0.14;
-  const bz = baseScale.z ?? 0.14;
+  const d = PHASE3_PIN_MODEL_SCALE;
+  const baseScale = target.getAttribute('scale') || { x: d, y: d, z: d };
+  const bx = baseScale.x ?? d;
+  const by = baseScale.y ?? d;
+  const bz = baseScale.z ?? d;
   const sx = bx * 0.72;
   const sy = by * 0.72;
   const sz = bz * 0.72;
@@ -59,6 +65,48 @@ function playPinClickFx(pinEl) {
   });
 }
 
+function repositionPinsFacingCamera(scene) {
+  if (typeof AFRAME === 'undefined' || getArPhase() !== 3) return;
+  const camEl = scene.querySelector('[camera]');
+  const pins = scene.querySelectorAll('.gem-pin');
+  if (!camEl || !pins.length) return;
+
+  camEl.object3D.updateMatrixWorld(true);
+  const mw = camEl.object3D.matrixWorld;
+  const v = new AFRAME.THREE.Vector3();
+
+  pins.forEach((pinEl, i) => {
+    const row = PHASE3_PIN_LAYOUT[i];
+    if (!row) return;
+    const { angleDeg, radius, y } = row;
+    const a = (angleDeg * Math.PI) / 180;
+    const lx = Math.sin(a) * radius;
+    const lz = -Math.cos(a) * radius;
+    v.set(lx, y, lz);
+    v.applyMatrix4(mw);
+    pinEl.setAttribute('position', `${v.x} ${v.y} ${v.z}`);
+    pinEl.setAttribute('animation__bob', {
+      property: 'position',
+      to: `${v.x} ${v.y + 0.08} ${v.z}`,
+      dir: 'alternate',
+      dur: 1400 + i * 120,
+      easing: 'easeInOutSine',
+      loop: true,
+    });
+  });
+
+  const rayEl = scene.querySelector('[raycaster]');
+  const rayComp = rayEl?.components?.raycaster;
+  if (rayComp && typeof rayComp.setDirty === 'function') rayComp.setDirty();
+}
+
+function schedulePinRepositions(scene) {
+  repositionPinsFacingCamera(scene);
+  [32, 120, 280, 550].forEach((ms) => {
+    setTimeout(() => repositionPinsFacingCamera(scene), ms);
+  });
+}
+
 function spawnPinsInto(scene) {
   const worldRoot = scene.querySelector('#phase3-mw-world-root') || scene;
 
@@ -73,7 +121,7 @@ function spawnPinsInto(scene) {
     pin.setAttribute('gem-pin', `id: ${gem.id}`);
     pin.setAttribute('position', `${x} ${y} ${z}`);
     pin.setAttribute('visible', 'true');
-    pin.setAttribute('geometry', { primitive: 'sphere', radius: 0.28 });
+    pin.setAttribute('geometry', { primitive: 'sphere', radius: PHASE3_PIN_HIT_SPHERE_RADIUS });
     pin.setAttribute('material', {
       shader: 'flat',
       color: '#ffffff',
@@ -84,7 +132,7 @@ function spawnPinsInto(scene) {
 
     pin.setAttribute('animation__bob', {
       property: 'position',
-      to: `${x} ${y + 0.05} ${z}`,
+      to: `${x} ${y + 0.08} ${z}`,
       dir: 'alternate',
       dur: 1400 + i * 120,
       easing: 'easeInOutSine',
@@ -93,7 +141,7 @@ function spawnPinsInto(scene) {
 
     const model = document.createElement('a-entity');
     model.setAttribute('gltf-model', 'url(./Assets/pin.gltf)');
-    model.setAttribute('scale', '0.14 0.14 0.14');
+    model.setAttribute('scale', `${PHASE3_PIN_MODEL_SCALE} ${PHASE3_PIN_MODEL_SCALE} ${PHASE3_PIN_MODEL_SCALE}`);
     model.addEventListener('model-loaded', (ev) => {
       const obj = ev.detail.model;
       obj.traverse((node) => {
@@ -108,7 +156,7 @@ function spawnPinsInto(scene) {
     });
     model.addEventListener('model-error', () => {
       const disc = document.createElement('a-circle');
-      disc.setAttribute('radius', '0.22');
+      disc.setAttribute('radius', String(Math.max(0.12, PHASE3_PIN_MODEL_SCALE * 1.55)));
       disc.setAttribute('material', `shader: flat; color: ${gem.color}; side: double`);
       pin.appendChild(disc);
     });
@@ -126,9 +174,7 @@ function spawnPinsInto(scene) {
     worldRoot.appendChild(pin);
   });
 
-  const rayEl = scene.querySelector('[raycaster]');
-  const rayComp = rayEl?.components?.raycaster;
-  if (rayComp && typeof rayComp.setDirty === 'function') rayComp.setDirty();
+  schedulePinRepositions(scene);
 }
 
 /**
@@ -168,7 +214,7 @@ export function mount(container, mindarVideoEl, mindarSceneEl) {
       <a-entity id="phase3-mw-world-root" position="0 0 0"></a-entity>
       <a-light type="ambient" color="#ffffff" intensity="0.92"></a-light>
       <a-camera position="0 0 0"
-        look-controls="enabled: true; touchEnabled: false; mouseEnabled: false; magicWindowTrackingEnabled: false">
+        look-controls="enabled: true; touchEnabled: false; mouseEnabled: false; magicWindowTrackingEnabled: true">
         <a-entity cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .gem-pin; far: 50"></a-entity>
       </a-camera>
     </a-scene>`;
