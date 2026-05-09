@@ -646,34 +646,54 @@ p { margin: 0; }
   white-space: nowrap;
 }
 
-/* dev chip — shows active validator + live alignment % */
-.dev-chip {
+/* dev controls — in-app mode toggle strip */
+.dev-controls {
   position: absolute;
-  top: 76px;
-  right: 14px;
+  bottom: 148px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(10px);
+  background: rgba(0,0,0,0.50);
+  backdrop-filter: blur(12px);
   border-radius: 999px;
-  padding: 5px 10px 5px 8px;
-  font-size: 0.72rem;
-  font-weight: 500;
-  color: rgba(255,255,255,0.92);
-  pointer-events: none;
+  padding: 6px 12px;
+  pointer-events: auto;
   font-variant-numeric: tabular-nums;
 }
-.dev-chip[hidden] { display: none; }
-.dev-chip-mode {
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-size: 0.62rem;
-  background: rgba(255,255,255,0.16);
-  padding: 2px 7px;
+.dev-toggle {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  color: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.10);
+  border: 1.5px solid rgba(255,255,255,0.15);
   border-radius: 999px;
+  padding: 4px 12px;
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+  -webkit-tap-highlight-color: transparent;
 }
-.dev-chip-score { min-width: 38px; text-align: right; }
+.dev-toggle[data-active="visual"],
+.dev-toggle[data-active="svg"] {
+  color: #fff;
+  background: rgba(255,255,255,0.22);
+  border-color: rgba(255,255,255,0.45);
+}
+.dev-toggle[data-active="mindar"],
+.dev-toggle[data-active="auto"] {
+  color: var(--mustard);
+  background: rgba(232,174,61,0.18);
+  border-color: rgba(232,174,61,0.5);
+}
+.dev-score {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: rgba(255,255,255,0.75);
+  min-width: 36px;
+  text-align: right;
+}
 
 /* ---- Phase 2: hunt ---- */
 .ar-hunt-hint {

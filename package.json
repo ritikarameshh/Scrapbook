@@ -10,7 +10,6 @@
     "tunnel": "node scripts/run-tunnel.cjs",
     "preview": "vite preview",
     "gen-outlines": "node scripts/generate-outline.mjs",
-    "compile-targets": "node scripts/compile-targets.mjs",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
