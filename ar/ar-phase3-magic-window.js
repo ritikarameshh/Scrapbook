@@ -214,7 +214,10 @@ export function mount(container, mindarVideoEl, mindarSceneEl) {
     </a-scene>`;
 
   stack.insertBefore(video, stack.firstChild);
-  container.appendChild(stack);
+  // Under .ar-ui-overlay (above #ar-scan-container). Insert first so topbar / phase UI paint on top.
+  const overlay = document.querySelector('.screen-ar-scan .ar-ui-overlay');
+  if (overlay) overlay.insertBefore(stack, overlay.firstChild);
+  else container.appendChild(stack);
 
   if (stream) {
     video.play().catch((e) => console.warn('[phase3-magic-window] mirror play:', e));
@@ -244,7 +247,7 @@ export function mount(container, mindarVideoEl, mindarSceneEl) {
  * @param {import('aframe').Entity | null} mindarSceneEl
  */
 export function unmount(container, mindarSceneEl) {
-  const stack = container?.querySelector('#phase3-magic-stack');
+  const stack = document.getElementById('phase3-magic-stack');
   if (stack) {
     const sc = stack.querySelector('#phase3-mw-scene');
     if (sc) {

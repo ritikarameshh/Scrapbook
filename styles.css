@@ -1344,11 +1344,11 @@ p { margin: 0; }
   opacity: 0.78;
 }
 
-/* Phase 3 magic-window stack (mirrored video + plain A-Frame) — lives in #ar-scan-container */
+/* Phase 3 magic-window stack — appended under .ar-ui-overlay so it stacks above #ar-scan-container */
 .phase3-magic-stack {
   position: absolute;
   inset: 0;
-  z-index: 10;
+  z-index: 1;
   pointer-events: auto;
   overflow: hidden;
 }
