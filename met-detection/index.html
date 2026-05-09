@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1" />
+  <meta name="theme-color" content="#F4F0E8" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <title>Scrapbook · Scan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- mindar ships as ES modules, so we map "mindar-image-three" + "three" here -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+        "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="device">
+    <div class="app" id="app">
+
+      <!-- ============ SPLASH ============ -->
+      <section class="screen screen-splash active" data-screen="splash">
+        <div class="splash-mark">
+          <img class="mark-logo" src="logo.png" alt="Scrapbook" />
+          <span class="wordmark">Scrapbook</span>
+        </div>
+        <h1 class="splash-title">Travel you can hold onto.</h1>
+        <p class="splash-sub">Walk a city. We'll spot the landmarks and the hidden gems, and stamp them into your book.</p>
+        <button class="btn btn-primary btn-block" data-go="home">Get started</button>
+        <button class="btn btn-ghost btn-block" data-go="home">I have an account</button>
+      </section>
+
+      <!-- ============ HOME — greeting + landmark grid ============ -->
+      <section class="screen has-tabs" data-screen="home">
+        <main class="screen-body home-body">
+          <div class="home-greeting">
+            <small>Looks like today you're in</small>
+            <h1>New York City</h1>
+          </div>
+
+          <p class="home-intro">
+            You're really close to <a class="home-link" data-go="ar-search">The Met</a> — tap to scan it and stamp it into your book.
+          </p>
+
+          <div class="landmark-grid">
+            <button class="landmark-card" data-go="ar-search">
+              <strong>The Met</strong>
+              <small>0.3 mi away</small>
+            </button>
+          </div>
+        </main>
+
+        <!-- Floating bottom nav with centered scan FAB — included on every tabbed screen -->
+        <nav class="tabbar">
+          <button class="tab-btn active" data-go="home" aria-label="Home">
+            <svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1V11z"/></svg>
+            <small>Home</small>
+          </button>
+          <button class="tab-btn" data-go="explore" aria-label="Explore">
+            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+            <small>Explore</small>
+          </button>
+          <button class="tab-fab" data-go="ar-search" aria-label="Scan">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 8V5a1 1 0 0 1 1-1h3"/>
+              <path d="M20 8V5a1 1 0 0 0-1-1h-3"/>
+              <path d="M4 16v3a1 1 0 0 0 1 1h3"/>
+              <path d="M20 16v3a1 1 0 0 1-1 1h-3"/>
+              <path d="M7 12h10"/>
+            </svg>
+          </button>
+          <button class="tab-btn" data-go="book" aria-label="Book">
+            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
+            <small>Book</small>
+          </button>
+          <button class="tab-btn" data-go="you" aria-label="You">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4.5-6 7-6s6 2 7 6"/></svg>
+            <small>You</small>
+          </button>
+        </nav>
+      </section>
+
+      <!-- ============ EXPLORE (full list of targets) ============ -->
+      <section class="screen has-tabs" data-screen="explore">
+        <header class="topbar">
+          <button class="icon-btn" data-back aria-label="Back">‹</button>
+          <span class="topbar-title">Places to scan</span>
+          <span class="topbar-spacer"></span>
+        </header>
+        <main class="screen-body">
+          <p class="h-sub no-top">One landmark near you today. Walk to it and tap scan.</p>
+          <ul class="target-list">
+            <li class="target-row">
+              <span class="target-tag landmark">Landmark</span>
+              <div class="target-meta">
+                <strong>The Met</strong>
+                <small>1000 5th Ave · Upper East Side</small>
+              </div>
+            </li>
+          </ul>
+        </main>
+        <nav class="tabbar">
+          <button class="tab-btn" data-go="home" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1V11z"/></svg><small>Home</small></button>
+          <button class="tab-btn active" data-go="explore" aria-label="Explore"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><small>Explore</small></button>
+          <button class="tab-fab" data-go="ar-search" aria-label="Scan"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3"/><path d="M20 8V5a1 1 0 0 0-1-1h-3"/><path d="M4 16v3a1 1 0 0 0 1 1h3"/><path d="M20 16v3a1 1 0 0 1-1 1h-3"/><path d="M7 12h10"/></svg></button>
+          <button class="tab-btn" data-go="book" aria-label="Book"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><small>Book</small></button>
+          <button class="tab-btn" data-go="you" aria-label="You"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4.5-6 7-6s6 2 7 6"/></svg><small>You</small></button>
+        </nav>
+      </section>
+
+      <!-- ============ BOOK (placeholder — Nisheta's territory) ============ -->
+      <section class="screen has-tabs" data-screen="book">
+        <header class="topbar">
+          <span class="topbar-spacer"></span>
+          <span class="topbar-title">Your book</span>
+          <span class="topbar-spacer"></span>
+        </header>
+        <main class="screen-body placeholder-body">
+          <div class="placeholder-card">
+            <p class="placeholder-eyebrow">Coming soon</p>
+            <h3>Stamps you've collected will live here.</h3>
+            <p class="placeholder-sub">Confirm a location, then collect its stamp to fill the book.</p>
+          </div>
+        </main>
+        <nav class="tabbar">
+          <button class="tab-btn" data-go="home" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1V11z"/></svg><small>Home</small></button>
+          <button class="tab-btn" data-go="explore" aria-label="Explore"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><small>Explore</small></button>
+          <button class="tab-fab" data-go="ar-search" aria-label="Scan"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3"/><path d="M20 8V5a1 1 0 0 0-1-1h-3"/><path d="M4 16v3a1 1 0 0 0 1 1h3"/><path d="M20 16v3a1 1 0 0 1-1 1h-3"/><path d="M7 12h10"/></svg></button>
+          <button class="tab-btn active" data-go="book" aria-label="Book"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><small>Book</small></button>
+          <button class="tab-btn" data-go="you" aria-label="You"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4.5-6 7-6s6 2 7 6"/></svg><small>You</small></button>
+        </nav>
+      </section>
+
+      <!-- ============ YOU (placeholder) ============ -->
+      <section class="screen has-tabs" data-screen="you">
+        <header class="topbar">
+          <span class="topbar-spacer"></span>
+          <span class="topbar-title">You</span>
+          <span class="topbar-spacer"></span>
+        </header>
+        <main class="screen-body placeholder-body">
+          <div class="placeholder-card">
+            <p class="placeholder-eyebrow">Profile</p>
+            <h3>Your trips & friends will live here.</h3>
+            <p class="placeholder-sub">For the demo, focus on Home → Scan.</p>
+          </div>
+        </main>
+        <nav class="tabbar">
+          <button class="tab-btn" data-go="home" aria-label="Home"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7h-6v7H4a1 1 0 0 1-1-1V11z"/></svg><small>Home</small></button>
+          <button class="tab-btn" data-go="explore" aria-label="Explore"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><small>Explore</small></button>
+          <button class="tab-fab" data-go="ar-search" aria-label="Scan"><svg viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3"/><path d="M20 8V5a1 1 0 0 0-1-1h-3"/><path d="M4 16v3a1 1 0 0 0 1 1h3"/><path d="M20 16v3a1 1 0 0 1-1 1h-3"/><path d="M7 12h10"/></svg></button>
+          <button class="tab-btn" data-go="book" aria-label="Book"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg><small>Book</small></button>
+          <button class="tab-btn active" data-go="you" aria-label="You"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4.5-6 7-6s6 2 7 6"/></svg><small>You</small></button>
+        </nav>
+      </section>
+
+      <!-- ============ AR — SEARCHING (full screen, no tabbar) ============ -->
+      <section class="screen screen-camera" data-screen="ar-search" data-needs-camera>
+        <!-- MindAR mounts its <video> + (hidden) renderer canvases inside this container -->
+        <div class="ar-feed" id="ar-mount"></div>
+        <div class="ar-scrim"></div>
+
+        <!-- Camera permission fallback -->
+        <div class="ar-perm" hidden>
+          <p class="ar-perm-title">Camera needed</p>
+          <p class="ar-perm-sub">Allow camera access to detect places around you.</p>
+          <button class="btn btn-pill primary" data-cam-retry>Enable camera</button>
+        </div>
+
+        <header class="topbar topbar-overlay">
+          <button class="icon-btn light" data-back aria-label="Close">✕</button>
+          <span class="ar-label" id="scan-status">Scanning…</span>
+          <span class="topbar-spacer"></span>
+        </header>
+
+        <div class="ar-stage">
+          <div class="ar-viewfinder" id="viewfinder">
+            <div class="vf-corner tl"></div>
+            <div class="vf-corner tr"></div>
+            <div class="vf-corner bl"></div>
+            <div class="vf-corner br"></div>
+            <div class="ar-hint">Move slowly. Keep the building in the frame.</div>
+          </div>
+          <div class="radar"><span></span></div>
+
+          <!-- Live confidence bar — shows the model's top guess in real time -->
+          <div class="conf-bar" id="conf-bar">
+            <div class="conf-bar-track"><div class="conf-bar-fill" id="conf-fill"></div></div>
+            <small class="conf-bar-label" id="conf-label">Looking…</small>
+          </div>
+        </div>
+
+        <!-- Detection overlay — replaces all the scanning UI when a place is found -->
+        <div class="ar-detected" id="ar-detected" hidden>
+          <div class="ar-detected-banner">
+            You're by <strong id="ar-detected-name">The Met</strong>!
+          </div>
+          <div class="ar-detected-frame"></div>
+          <button class="ar-detected-card" id="ar-detected-card">
+            <div class="ar-detected-info">
+              <strong id="ar-detected-title">The Met</strong>
+              <small id="ar-detected-sub">Upper East Side, New York</small>
+            </div>
+            <span class="ar-detected-arrow" aria-hidden="true">›</span>
+          </button>
+          <button class="ar-detected-dismiss" id="ar-detected-dismiss">wrong place — keep scanning</button>
+        </div>
+
+        <footer class="ar-footer">
+          <button class="btn btn-pill" id="simulate-btn">Simulate detection</button>
+        </footer>
+      </section>
+
+      <!-- ============ CONFIRMED — end of Ritika's flow, hands off to stamp collection ============ -->
+      <section class="screen screen-confirmed" data-screen="confirmed">
+        <main class="screen-body confirmed-body">
+          <div class="check-circle" aria-hidden="true">
+            <svg viewBox="0 0 52 52">
+              <circle class="check-circle-ring"  cx="26" cy="26" r="23" />
+              <path  class="check-circle-tick"  d="M14 27 l8 8 l16 -18" />
+            </svg>
+          </div>
+          <p class="fact-eyebrow">Location confirmed</p>
+          <h2 class="confirmed-title" id="confirmed-title">You're at The Met</h2>
+          <p class="confirmed-sub" id="confirmed-sub">Great — you're at the right place.</p>
+        </main>
+        <footer class="screen-footer split">
+          <button class="btn btn-ghost" data-go="ar-search">Scan again</button>
+          <button class="btn btn-primary" data-go="home">Continue →</button>
+        </footer>
+      </section>
+
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
