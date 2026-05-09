@@ -125,9 +125,11 @@ export async function startPhase2Hunt({
 
   const $ = (sel) => host.querySelector(sel);
   const tplCameraVideo = $('.p2-cameraVideo');
+  // MindAR’s <video> lives under WebGL layers and is often not visible. Mirror its MediaStream
+  // onto this host’s video so CSS (#ar-phase-2-host .p2-cameraVideo) shows the feed while
+  // MediaPipe / optical flow read the same mirrored element.
   const ownsCameraStream = !sharedVideoElement;
-  const captureVideo = sharedVideoElement || tplCameraVideo;
-  if (sharedVideoElement) tplCameraVideo.classList.add('p2-hidden');
+  const captureVideo = tplCameraVideo;
   const threeCanvas   = $('.p2-threeCanvas');
   const statusBar     = $('.p2-statusBar');
   const compassHint   = $('.p2-compassHint');
@@ -311,10 +313,19 @@ export async function startPhase2Hunt({
   async function attachCameraStream(streamPromise) {
     if (!ownsCameraStream) {
       try {
-        await captureVideo.play();
-        return captureVideo.readyState >= 2;
+        const ext = sharedVideoElement;
+        for (let i = 0; i < 80 && ext && !ext.srcObject; i++) {
+          await new Promise((r) => setTimeout(r, 50));
+        }
+        if (!ext?.srcObject) {
+          console.warn('[phase2-hunt] MindAR video has no MediaStream after wait');
+          return false;
+        }
+        tplCameraVideo.srcObject = ext.srcObject;
+        await tplCameraVideo.play();
+        return tplCameraVideo.readyState >= 2;
       } catch (err) {
-        console.error('[phase2-hunt] shared video error:', err);
+        console.error('[phase2-hunt] shared video mirror error:', err);
         showError(
           'Camera not ready',
           'The AR camera preview is not available yet. Close AR and try again.',
@@ -1200,9 +1211,7 @@ export async function startPhase2Hunt({
       try { mediaStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
     }
     mediaStream = null;
-    if (ownsCameraStream) {
-      try { captureVideo.srcObject = null; } catch (_) {}
-    }
+    try { tplCameraVideo.srcObject = null; } catch (_) {}
     for (const { target, ev, fn, opts } of winListeners) {
       try { target.removeEventListener(ev, fn, opts); } catch (_) {}
     }
