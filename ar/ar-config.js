@@ -25,7 +25,7 @@ export const HIDDEN_GEMS = [
 export const SECOND_SPOT_GEM_ID = HIDDEN_GEMS[1].id;
 
 export const PHASE3_PIN_LAYOUT = [
-  { angleDeg: -22, radius: 1.1, y: 0.15 },
-  { angleDeg: 0, radius: 1.2, y: 0.45 },
-  { angleDeg: 22, radius: 1.1, y: -0.15 },
+  { angleDeg: -34, radius: 1.55, y: 0.12 },
+  { angleDeg: 0, radius: 1.72, y: 0.38 },
+  { angleDeg: 34, radius: 1.55, y: -0.12 },
 ];
