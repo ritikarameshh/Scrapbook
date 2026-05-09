@@ -152,7 +152,10 @@ function transitionToPhase3() {
 
   setArPhase(3);
   setARPhaseUI(3);
-  phasePins.activatePinsPhase(sceneEl);
+  // Let look-controls / active camera settle before parenting pins to the camera.
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => phasePins.activatePinsPhase(sceneEl));
+  });
 }
 
 function beginPhase4OutlineFlow() {
