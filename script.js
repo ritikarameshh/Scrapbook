@@ -107,16 +107,25 @@ document.addEventListener('click', (e) => {
 let arPhase   = 0; // 0 = idle | 1 = scanning | 2 = hunting
 let arSceneEl = null;
 
-const ALIGNMENT_THRESHOLD    = 0.60;   // tolerant IoU is more generous; 0.50 ≈ "roughly aligned"
+const ALIGNMENT_THRESHOLD    = 0.57;   // tolerant IoU is more generous; 0.50 ≈ "roughly aligned"
 const ALIGNMENT_SUSTAIN_MS   = 1000;
 const ALIGNMENT_TICK_MS      = 100;    // visual validator runs at 10 Hz
 const VISUAL_GRID_W          = 192;    // downsampled Sobel grid; cheap on phones
 const VISUAL_GRID_H          = 256;
 const VISUAL_EDGE_THRESHOLD  = 60;     // 0..255
-const VISUAL_TOLERANCE_PX    = 3;      // tolerance-aware IoU: edges within N px count as a match
+const VISUAL_TOLERANCE_PX    = 4;      // tolerance-aware IoU: edges within N px count as a match
 
 // Single outline source — visual edge-match validator only.
 const OUTLINE_SRC = 'Assets/HiddenGem.auto.png';
+
+// Phase 3: hidden-gem suggestions shown after stamp collection.
+const HIDDEN_GEMS = [
+  { id: 'pub',     title: 'A 100 year old pub',                                    type: 'Pub',          walkMin: 4,  color: '#8C5A1A' },
+  { id: 'gallery', title: 'A gallery where you can hear whispers across the room', type: 'Gallery',      walkMin: 7,  color: '#3F5532' },
+  { id: 'install', title: 'A hidden away art installation',                        type: 'Art install.', walkMin: 11, color: '#E26E5F' },
+];
+let currentGemId = null;
+let gemToastTimer = null;
 
 function restartAlignmentLoop() {
   stopAlignmentLoops();
@@ -171,6 +180,89 @@ if (typeof AFRAME !== 'undefined' && !AFRAME.components['compass-updater']) {
       const tapHint = document.getElementById('tap-to-collect');
       if (tapHint) tapHint.hidden = !inView;
     },
+  });
+}
+
+// Phase 3 gem pin: data-only marker. Click handling is driven by attachPhase3PinPicker
+// (manual canvas raycast) for reliability across the dynamically swapped scene.
+if (typeof AFRAME !== 'undefined' && !AFRAME.components['gem-pin']) {
+  AFRAME.registerComponent('gem-pin', {
+    schema: { id: { type: 'string' } },
+  });
+}
+
+let phase3PickerBound = null;
+function attachPhase3PinPicker() {
+  if (!arSceneEl) return;
+  const canvas = arSceneEl.canvas || arSceneEl.querySelector('canvas');
+  if (!canvas) {
+    console.warn('[hidden-gem] no canvas yet, retrying picker in 200ms');
+    setTimeout(attachPhase3PinPicker, 200);
+    return;
+  }
+  if (phase3PickerBound) {
+    phase3PickerBound.canvas.removeEventListener('click', phase3PickerBound.handler);
+  }
+
+  const handler = (ev) => {
+    console.log('[hidden-gem] canvas click at', ev.clientX, ev.clientY, 'phase=', arPhase);
+    if (arPhase !== 3 || !arSceneEl) return;
+
+    const camEl = arSceneEl.querySelector('[camera]');
+    const cam = camEl?.getObject3D('camera');
+    if (!cam) { console.warn('[hidden-gem] no camera object3D'); return; }
+
+    const rect = canvas.getBoundingClientRect();
+    const ndc = new AFRAME.THREE.Vector2(
+      ((ev.clientX - rect.left) / rect.width) * 2 - 1,
+      -((ev.clientY - rect.top) / rect.height) * 2 + 1,
+    );
+
+    const raycaster = new AFRAME.THREE.Raycaster();
+    raycaster.setFromCamera(ndc, cam);
+
+    const pinEls = Array.from(arSceneEl.querySelectorAll('.gem-pin'));
+    const objects = pinEls.map((p) => p.object3D).filter(Boolean);
+    const hits = raycaster.intersectObjects(objects, true);
+    console.log('[hidden-gem] raycast hits:', hits.length, 'pins in scene:', pinEls.length);
+
+    if (!hits.length) return;
+
+    // Walk up to find the .gem-pin entity that owns the hit mesh.
+    let obj = hits[0].object;
+    while (obj && !(obj.el && obj.el.classList?.contains('gem-pin'))) obj = obj.parent;
+    const pinEl = obj?.el;
+    if (!pinEl) { console.warn('[hidden-gem] hit had no .gem-pin ancestor'); return; }
+
+    const id = pinEl.components?.['gem-pin']?.data?.id;
+    console.log('[hidden-gem] CLICK on pin id=', id);
+    playPinClickFx(pinEl);
+    if (id) openGemCard(id);
+  };
+
+  canvas.addEventListener('click', handler);
+  phase3PickerBound = { canvas, handler };
+  console.log('[hidden-gem] picker attached to canvas', canvas);
+}
+
+function playPinClickFx(pinEl) {
+  // Brief scale-down then back, so the tap reads visually.
+  pinEl.removeAttribute('animation__click');
+  pinEl.removeAttribute('animation__clickback');
+  pinEl.setAttribute('animation__click', {
+    property: 'scale',
+    from:     '1 1 1',
+    to:       '0.7 0.7 0.7',
+    dur:      110,
+    easing:   'easeOutQuad',
+  });
+  pinEl.setAttribute('animation__clickback', {
+    property: 'scale',
+    from:     '0.7 0.7 0.7',
+    to:       '1 1 1',
+    dur:      180,
+    delay:    110,
+    easing:   'easeOutBack',
   });
 }
 
@@ -537,11 +629,201 @@ function transitionToPhase2(anchorEl) {
 function setARPhaseUI(phase) {
   const p1Out    = document.getElementById('ar-phase-outline');
   const p2       = document.getElementById('ar-phase-2');
+  const p3       = document.getElementById('ar-phase-3');
   const tapHint  = document.getElementById('tap-to-collect');
   if (p1Out)    p1Out.hidden = (phase !== 1);
   if (p2)       p2.hidden    = (phase !== 2);
+  if (p3)       p3.hidden    = (phase !== 3);
   if (tapHint)  tapHint.hidden = true;
+  if (phase !== 3) closeGemCard();
 }
+
+let phase3VideoStream = null;
+
+function teardownMindARScene() {
+  // Stop alignment + MindAR system, but keep the AR screen visible.
+  stopAlignmentLoops();
+  alignmentLocked = false;
+  alignmentSustainStart = 0;
+  if (arSceneEl) {
+    try { arSceneEl.systems?.['mindar-image-system']?.stop(); } catch (_) {}
+  }
+  arSceneEl = null;
+  const container = document.getElementById('ar-scan-container');
+  if (container) container.innerHTML = '';
+}
+
+function transitionToPhase3() {
+  // MindAR's image-tracking renderer is unstable here (broken targets-combined.mind),
+  // so for Phase 3 we swap to a plain A-Frame scene with a manual camera-feed video.
+  teardownMindARScene();
+  closeGemCard();
+
+  const container = document.getElementById('ar-scan-container');
+  if (!container) return;
+
+  container.innerHTML = `
+    <video id="phase3-video" autoplay playsinline muted
+      style="position:absolute;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:0;"></video>
+    <a-scene id="ar-scene" embedded
+      vr-mode-ui="enabled: false"
+      device-orientation-permission-ui="enabled: false"
+      renderer="alpha: true"
+      style="position:absolute;top:0;left:0;width:100%;height:100%;z-index:1;">
+      <a-light type="ambient" color="#ffffff" intensity="0.9"></a-light>
+      <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+    </a-scene>`;
+
+  arSceneEl = document.getElementById('ar-scene');
+  arSceneEl?.addEventListener('renderstart', () => {
+    if (arSceneEl?.renderer) arSceneEl.renderer.setClearColor(0x000000, 0);
+    attachPhase3PinPicker();
+  }, { once: true });
+
+  // Camera passthrough via getUserMedia (independent of MindAR).
+  const video = document.getElementById('phase3-video');
+  navigator.mediaDevices?.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
+    .then((stream) => {
+      phase3VideoStream = stream;
+      if (video) video.srcObject = stream;
+    })
+    .catch((err) => console.warn('[hidden-gem] camera unavailable:', err));
+
+  arPhase = 3;
+  setARPhaseUI(3);
+
+  const spawnPins = () => {
+    if (!arSceneEl) return;
+    arSceneEl.querySelectorAll('.gem-pin').forEach((n) => n.parentNode.removeChild(n));
+    spawnGemPinsInto(arSceneEl);
+  };
+
+  if (arSceneEl?.hasLoaded) spawnPins();
+  else arSceneEl?.addEventListener('loaded', spawnPins, { once: true });
+}
+
+function spawnGemPinsInto(scene) {
+  // Cluster pins narrow & close so all three fit a phone FOV (~60°) and read large.
+  const layout = [
+    { angleDeg: -22, radius: 1.1, y:  0.15 },
+    { angleDeg:   0, radius: 1.2, y:  0.45 },
+    { angleDeg:  22, radius: 1.1, y: -0.15 },
+  ];
+
+  HIDDEN_GEMS.forEach((gem, i) => {
+    const { angleDeg, radius, y } = layout[i] || layout[0];
+    const a = (angleDeg * Math.PI) / 180;
+    const x = Math.sin(a) * radius;
+    const z = -Math.cos(a) * radius;
+
+    // Outer pin entity carries the gem-pin (click) component and the floating bob animation.
+    // The bob is on the OUTER entity so the inner model can independently spin.
+    const pin = document.createElement('a-entity');
+    pin.classList.add('gem-pin');
+    pin.setAttribute('gem-pin', `id: ${gem.id}`);
+    pin.setAttribute('position', `${x} ${y} ${z}`);
+    pin.setAttribute('visible', 'true');
+
+    // Floating animation: gentle vertical bob.
+    pin.setAttribute('animation__bob', {
+      property: 'position',
+      to:       `${x} ${y + 0.08} ${z}`,
+      dir:      'alternate',
+      dur:      1400 + i * 120,
+      easing:   'easeInOutSine',
+      loop:     true,
+    });
+
+    // Inner wrapper: holds the gltf model + slow spin so the bob and spin don't interfere.
+    const model = document.createElement('a-entity');
+    model.setAttribute('gltf-model', 'url(./Assets/pin.gltf)');
+    model.setAttribute('scale', '0.14 0.14 0.14');
+    // Tint the model material once it loads so each pin reads as a distinct colour.
+    model.addEventListener('model-loaded', (ev) => {
+      const obj = ev.detail.model;
+      obj.traverse((node) => {
+        if (node.isMesh && node.material) {
+          // Clone so we don't mutate a shared material across all pins.
+          node.material = node.material.clone();
+          node.material.color = new AFRAME.THREE.Color(gem.color);
+          node.material.metalness = 0.1;
+          node.material.roughness = 0.55;
+        }
+      });
+    });
+    // Fallback: if gltf fails (e.g. missing scene.bin), show a colored disc so the pin is still visible.
+    model.addEventListener('model-error', () => {
+      console.warn('[hidden-gem] pin model failed to load — falling back to disc. Add Assets/scene.bin or convert pin.gltf to .glb.');
+      const disc = document.createElement('a-circle');
+      disc.setAttribute('radius', '0.34');
+      disc.setAttribute('material', `shader: flat; color: ${gem.color}; side: double`);
+      pin.appendChild(disc);
+    });
+    pin.appendChild(model);
+
+    // Slow spin around Y so the pin stays interesting.
+    model.setAttribute('animation__spin', {
+      property: 'rotation',
+      from:     '0 0 0',
+      to:       '0 360 0',
+      dur:      6000,
+      easing:   'linear',
+      loop:     true,
+    });
+
+    scene.appendChild(pin);
+  });
+
+  console.log('[hidden-gem] phase 3: spawned pins', scene.querySelectorAll('.gem-pin').length);
+}
+
+function openGemCard(id) {
+  const gem = HIDDEN_GEMS.find((g) => g.id === id);
+  if (!gem) return;
+  currentGemId = id;
+
+  const card     = document.getElementById('gem-detail-card');
+  const titleEl  = card?.querySelector('[data-gem-title]');
+  const typeEl   = card?.querySelector('[data-gem-type]');
+  const walkEl   = card?.querySelector('[data-gem-walk]');
+  if (titleEl) titleEl.textContent = gem.title;
+  if (typeEl)  typeEl.textContent  = gem.type;
+  if (walkEl)  walkEl.textContent  = `${gem.walkMin} min walk`;
+  if (card)    card.hidden = false;
+}
+
+function closeGemCard() {
+  const card = document.getElementById('gem-detail-card');
+  if (card) card.hidden = true;
+  currentGemId = null;
+}
+
+function showGemToast(msg) {
+  const toast = document.getElementById('gem-toast');
+  if (!toast) return;
+  toast.textContent = msg;
+  toast.hidden = false;
+  if (gemToastTimer) clearTimeout(gemToastTimer);
+  gemToastTimer = setTimeout(() => { toast.hidden = true; }, 1600);
+}
+
+document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-sim-collect]')) {
+    e.stopPropagation();
+    if (arPhase === 2) collectStamp();
+    return;
+  }
+  if (e.target.closest('[data-gem-close]')) {
+    e.stopPropagation();
+    closeGemCard();
+    return;
+  }
+  if (e.target.closest('[data-gem-go]')) {
+    e.stopPropagation();
+    console.log('[hidden-gem] go:', currentGemId);
+    showGemToast('Heading there… (placeholder)');
+  }
+});
 
 function showARError(msg) {
   const hint = document.querySelector('#ar-phase-outline .ar-hint');
@@ -554,7 +836,23 @@ function stopAR() {
   alignmentLocked = false;
   alignmentSustainStart = 0;
 
+  closeGemCard();
+  const toast = document.getElementById('gem-toast');
+  if (toast) toast.hidden = true;
+  if (gemToastTimer) { clearTimeout(gemToastTimer); gemToastTimer = null; }
+
+  // Phase 3's manual camera stream (independent of MindAR).
+  if (phase3VideoStream) {
+    try { phase3VideoStream.getTracks().forEach((t) => t.stop()); } catch (_) {}
+    phase3VideoStream = null;
+  }
+  if (phase3PickerBound) {
+    try { phase3PickerBound.canvas.removeEventListener('click', phase3PickerBound.handler); } catch (_) {}
+    phase3PickerBound = null;
+  }
+
   if (arSceneEl) {
+    arSceneEl.querySelectorAll('.gem-pin').forEach((n) => n.parentNode.removeChild(n));
     const s = arSceneEl;
     arSceneEl = null;
     try {
@@ -595,8 +893,7 @@ if (arScanEl) arScanEl.addEventListener('click', (e) => {
 });
 
 function collectStamp() {
-  stopAR();
-  go('ar-fact');
+  transitionToPhase3();
 }
 
 // ============ Boot ============

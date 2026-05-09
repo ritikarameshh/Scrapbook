@@ -101,6 +101,25 @@
               <span class="compass-label">Stamp direction</span>
               <span class="compass-arrow">↑</span>
             </div>
+            <button type="button" class="btn btn-ghost ar-sim-btn" data-sim-collect>Simulate find stamp</button>
+          </div>
+
+          <!-- Phase 3: hidden-gem suggestions -->
+          <div id="ar-phase-3" class="ar-phase ar-phase-3" hidden>
+            <header class="ar-phase-3-heading">
+              <h2>You are near some interesting spots</h2>
+              <p>Tap a pin around you to see details</p>
+            </header>
+
+            <div id="gem-detail-card" class="gem-detail-card" hidden>
+              <button class="gem-detail-close" data-gem-close aria-label="Close">✕</button>
+              <p class="gem-detail-type" data-gem-type></p>
+              <h3 class="gem-detail-title" data-gem-title></h3>
+              <p class="gem-detail-meta"><span data-gem-walk></span></p>
+              <button class="btn btn-primary btn-block" data-gem-go>Go →</button>
+            </div>
+
+            <div id="gem-toast" class="gem-toast" hidden></div>
           </div>
         </div>
 
