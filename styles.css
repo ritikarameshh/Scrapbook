@@ -2159,10 +2159,12 @@ p { margin: 0; }
 }
 
 /* ============ Phase 3 — hidden-gem suggestions ============ */
+/* Stack above .phase3-magic-stack (z-index:1), below .topbar-overlay (z-index:5) */
 .ar-phase-3 {
   pointer-events: none;
   position: absolute; inset: 0;
   display: flex; flex-direction: column;
+  z-index: 3;
 }
 .ar-phase-3-heading {
   pointer-events: none;

@@ -40,8 +40,9 @@ export const PHASE3_PIN_MODEL_SCALE = 0.14;
 /** Invisible sphere for tap raycasts; keep roughly ~2× visual footprint */
 export const PHASE3_PIN_HIT_SPHERE_RADIUS = 0.28;
 
+/** World-space arc in front of camera: tighter cluster so all three read in one glance on phone. */
 export const PHASE3_PIN_LAYOUT = [
-  { angleDeg: -40, radius: 1.38, y: 0.12 },
-  { angleDeg: 0, radius: 1.52, y: 0.42 },
-  { angleDeg: 40, radius: 1.38, y: -0.12 },
+  { angleDeg: -25, radius: 1.2, y: 0.06 },
+  { angleDeg: 0, radius: 1.1, y: 0.14 },
+  { angleDeg: 25, radius: 1.2, y: 0.02 },
 ];

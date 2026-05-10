@@ -14,6 +14,34 @@ import * as mindarHost from './ar-mindar-host.js';
 import { getArPhase } from './session-state.js';
 
 let gemPinRegistered = false;
+let pinLabelYawRegistered = false;
+
+function ensurePinLabelYaw() {
+  if (typeof AFRAME === 'undefined') return;
+  if (pinLabelYawRegistered) return;
+  if (AFRAME.components['pin-label-yaw']) {
+    pinLabelYawRegistered = true;
+    return;
+  }
+  const THREE = AFRAME.THREE;
+  AFRAME.registerComponent('pin-label-yaw', {
+    init() {
+      this._camW = new THREE.Vector3();
+      this._posW = new THREE.Vector3();
+    },
+    tick() {
+      const scene = this.el.sceneEl;
+      const cam = scene?.camera;
+      if (!cam) return;
+      cam.getWorldPosition(this._camW);
+      this.el.object3D.getWorldPosition(this._posW);
+      const dx = this._camW.x - this._posW.x;
+      const dz = this._camW.z - this._posW.z;
+      this.el.object3D.rotation.y = Math.atan2(dx, dz);
+    },
+  });
+  pinLabelYawRegistered = true;
+}
 
 function ensureGemPinComponent() {
   if (typeof AFRAME === 'undefined') return;
@@ -109,6 +137,8 @@ function schedulePinRepositions(scene) {
 
 function spawnPinsInto(scene) {
   const worldRoot = scene.querySelector('#phase3-mw-world-root') || scene;
+  ensureGemPinComponent();
+  ensurePinLabelYaw();
 
   HIDDEN_GEMS.forEach((gem, i) => {
     const { angleDeg, radius, y } = PHASE3_PIN_LAYOUT[i] || PHASE3_PIN_LAYOUT[0];
@@ -161,6 +191,26 @@ function spawnPinsInto(scene) {
       pin.appendChild(disc);
     });
     pin.appendChild(model);
+
+    /* Category above pin — small but legible (scaled a-text + yaw to camera) */
+    const labelLift = PHASE3_PIN_MODEL_SCALE * 2.75;
+    const labelWrap = document.createElement('a-entity');
+    labelWrap.setAttribute('position', `0 ${labelLift} 0`);
+    labelWrap.setAttribute('pin-label-yaw', '');
+    labelWrap.setAttribute('scale', '0.38 0.38 0.38');
+    labelWrap.setAttribute('text', {
+      value: gem.type,
+      align: 'center',
+      baseline: 'bottom',
+      width: 2.4,
+      wrapCount: 22,
+      color: '#FFFFFF',
+      outlineColor: '#161616',
+      outlineWidth: '0.055',
+      shader: 'msdf',
+      zOffset: 0.02,
+    });
+    pin.appendChild(labelWrap);
 
     model.setAttribute('animation__spin', {
       property: 'rotation',
@@ -242,7 +292,6 @@ export function mount(container, mindarVideoEl, mindarSceneEl) {
   );
 
   const spawn = () => {
-    ensureGemPinComponent();
     spawnPinsInto(mwScene);
   };
   if (mwScene.hasLoaded) spawn();
