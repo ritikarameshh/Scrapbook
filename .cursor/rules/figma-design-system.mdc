@@ -11,7 +11,7 @@ alwaysApply: true
 
 # Scrapbook Design System Rules
 
-This project is a vanilla HTML/CSS/JS mobile-AR web app (Vite-built, no frameworks).
+This project is a vanilla HTML/CSS/JS mobile-AR web app (static ES modules, no bundler, no frameworks).
 There is no React, no Vue, no Tailwind, no CSS-in-JS, no component library. All UI is
 authored as HTML sections inside `index.html` and styled via the single global stylesheet
 `styles.css`. Treat any Figma MCP output (which is React + Tailwind by default) as a
@@ -23,8 +23,8 @@ HTML + CSS conventions and reuse the tokens defined below.
 ## 1. Tech Stack & Project Layout
 
 - **Languages**: HTML, CSS, JavaScript (CommonJS modules + ES modules in vendored libs)
-- **Build / dev server**: Vite (`npm run dev`, `npm run dev:https`)
-- **3D / AR**: `three`, `mind-ar`, plus a vendored MindAR-A-Frame bundle
+- **Build / dev server**: static files; local preview via `serve` (`npm run dev`). Production: deploy the repo root to Vercel (or any static host) with HTTPS.
+- **3D / AR**: Three.js (CDN / import map), MindAR vendored bundle (`mindar-image-aframe.prod.js`), A-Frame from CDN
 - **No bundled UI framework** — DOM is built directly from string templates and rendered into screen sections
 - **Source roots**:
   - `index.html` — single-page app shell, declares every screen as `<section class="screen" data-screen="…">`
