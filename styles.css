@@ -892,31 +892,138 @@ p { margin: 0; }
   position: absolute;
   inset: 0;
   z-index: 25;
-  background: rgba(236,236,234,0.94);
+  background: #f2dad0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: 18px;
+  justify-content: space-between;
+  padding: calc(var(--p2-safe-top) + 96px) 32px calc(var(--p2-safe-bottom) + 56px);
+  font-family: "Reddit Sans", var(--font-sans);
+  color: #000;
+  text-align: center;
   transition: opacity 0.4s ease;
 }
 #ar-phase-2-host .p2-loadingScreen.p2-hidden { opacity: 0; pointer-events: none; }
+
+#ar-phase-2-host .p2-loadingHeader,
+#ar-phase-2-host .p2-loadingBody,
+#ar-phase-2-host .p2-loadingFooter {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: p2-loadingEnter 0.6s cubic-bezier(0.22, 0.61, 0.36, 1) forwards;
+}
+#ar-phase-2-host .p2-loadingHeader { animation-delay: 0.15s; }
+#ar-phase-2-host .p2-loadingBody   { animation-delay: 0.85s; }
+#ar-phase-2-host .p2-loadingFooter {
+  animation-name: p2-loadingFadeIn;
+  animation-delay: 1.55s;
+  animation-duration: 0.5s;
+  transform: none;
+}
+@keyframes p2-loadingEnter {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes p2-loadingFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+#ar-phase-2-host .p2-loadingHeader {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 282px;
+}
+#ar-phase-2-host .p2-loadingEyebrow {
+  font-family: "Reddit Sans", var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  color: #000;
+  letter-spacing: 0;
+  text-transform: none;
+  margin: 0;
+}
+#ar-phase-2-host .p2-loadingTitle {
+  font-family: "Reddit Sans", var(--font-sans);
+  font-size: 32px;
+  font-style: italic;
+  font-weight: 800;
+  line-height: 1.2;
+  color: #000;
+  text-shadow: 0 0 7px rgba(0,0,0,0.15);
+  margin: 0;
+}
+
+#ar-phase-2-host .p2-loadingBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  width: 100%;
+  max-width: 282px;
+}
+#ar-phase-2-host .p2-loadingPrompt {
+  font-family: "Reddit Sans", var(--font-sans);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  color: #2c2c2c;
+  margin: 0;
+}
+#ar-phase-2-host .p2-loadingStamp {
+  width: min(224px, 70vw);
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#ar-phase-2-host .p2-loadingStamp img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+#ar-phase-2-host .p2-loadingFooter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 19px;
+}
 #ar-phase-2-host .p2-spinner {
-  width: 52px;
-  height: 52px;
-  border: 4px solid rgba(69,34,34,0.12);
-  border-top-color: var(--brand);
-  border-right-color: var(--coral);
+  width: 48px;
+  height: 48px;
+  border: 2px solid rgba(113,47,20,0.18);
+  border-top-color: #712f14;
   border-radius: 50%;
   animation: p2-spin 0.9s linear infinite;
 }
 @keyframes p2-spin { to { transform: rotate(360deg); } }
 #ar-phase-2-host .p2-loadingText {
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--ink-soft);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-family: "Reddit Sans", var(--font-sans);
+  font-size: 24px;
+  font-weight: 500;
+  line-height: 1;
+  color: #712f14;
+  letter-spacing: 0;
+  text-transform: none;
+  white-space: nowrap;
+}
+
+@media (max-height: 700px) {
+  #ar-phase-2-host .p2-loadingScreen {
+    padding-top: calc(var(--p2-safe-top) + 56px);
+    padding-bottom: calc(var(--p2-safe-bottom) + 32px);
+  }
+  #ar-phase-2-host .p2-loadingTitle { font-size: 26px; }
+  #ar-phase-2-host .p2-loadingPrompt { font-size: 20px; }
+  #ar-phase-2-host .p2-loadingStamp { width: min(180px, 55vw); }
+  #ar-phase-2-host .p2-loadingText { font-size: 20px; }
 }
 
 #ar-phase-2-host .p2-errorScreen {
@@ -979,7 +1086,7 @@ p { margin: 0; }
   }
 }
 
-/* Facts modal — integration-themed (warm cream surface, Fraunces serif, brand buttons) */
+/* Facts modal — bottom sheet matching the Figma “Stamp found!” design */
 #ar-phase-2-host .p2-factsBackdrop {
   position: absolute;
   inset: 0;
@@ -1004,82 +1111,146 @@ p { margin: 0; }
   pointer-events: auto;
   transform: translateY(100%);
   transition: transform 0.45s cubic-bezier(0.22, 1, 0.36, 1);
-  padding: 12px;
-  padding-bottom: calc(var(--p2-safe-bottom) + 12px);
 }
 #ar-phase-2-host .p2-factsModal.p2-visible { transform: translateY(0); }
 #ar-phase-2-host .p2-factsCard {
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  padding: 18px 22px 22px;
-  box-shadow: var(--shadow);
+  background: #ffffff;
+  border-radius: 32px 32px 0 0;
+  padding: 40px 16px calc(var(--p2-safe-bottom) + 40px);
+  box-shadow: 0 -10px 30px rgba(0,0,0,0.10);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
   max-height: 86vh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
-#ar-phase-2-host .p2-grabber {
-  width: 40px;
-  height: 4px;
-  border-radius: 3px;
-  background: var(--line);
-  margin: 0 auto 14px;
-}
-#ar-phase-2-host .p2-stampSnapshot {
-  display: block;
-  width: 116px;
-  height: 116px;
-  margin: 4px auto 14px;
-  border-radius: 24px;
-  background: var(--bg-soft);
-  object-fit: contain;
-  object-position: center;
-  animation: p2-float 4s ease-in-out infinite;
-}
-@keyframes p2-float {
-  0%, 100% { transform: translateY(0) rotate(-3deg); }
-  50%      { transform: translateY(-10px) rotate(3deg); }
-}
-#ar-phase-2-host .p2-factsCard .p2-eyebrow {
-  text-align: center;
-  color: var(--ink-mute);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin: 0 0 4px;
-}
 #ar-phase-2-host .p2-factsTitle {
   font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.55rem;
-  letter-spacing: -0.018em;
+  font-weight: 700;
+  font-size: 32px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
   text-align: center;
-  color: var(--ink);
-  margin: 0 0 14px;
+  color: #2c2c2c;
+  margin: 0;
+  font-variation-settings: 'SOFT' 0, 'WONK' 1;
 }
-#ar-phase-2-host .p2-featuredFact {
-  background: var(--bg-soft);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 16px 18px;
-  margin-bottom: 18px;
-  text-align: center;
-  font-size: 0.96rem;
-  line-height: 1.5;
-  color: var(--ink);
-  min-height: 76px;
+#ar-phase-2-host .p2-stampViewer {
+  width: 200px;
+  height: 200px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
+  animation: p2-stampFloat 5s ease-in-out infinite;
 }
+#ar-phase-2-host .p2-stampViewerCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+}
+@keyframes p2-stampFloat {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+#ar-phase-2-host .p2-factsCallout {
+  background: #f4f4f4;
+  border-radius: 16px;
+  padding: 24px 16px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: center;
+}
+#ar-phase-2-host .p2-factsEyebrow {
+  font-family: "Reddit Sans", var(--font-sans);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+  color: #af413a;
+  margin: 0;
+}
+#ar-phase-2-host .p2-featuredFact {
+  font-family: "Reddit Sans", var(--font-sans);
+  font-weight: 400;
+  font-size: 18px;
+  line-height: 1.4;
+  letter-spacing: -0.01em;
+  color: #2c2c2c;
+  margin: 0;
+}
+#ar-phase-2-host .p2-factLead { font-weight: 700; }
+#ar-phase-2-host .p2-factBody { font-weight: 400; }
+
 #ar-phase-2-host .p2-actionRow {
   display: flex;
-  gap: 10px;
+  gap: 8px;
+  width: 100%;
   align-items: stretch;
 }
-#ar-phase-2-host .p2-actionRow .p2-shareBtn { flex: 0 0 auto; padding: 12px 18px; }
-#ar-phase-2-host .p2-actionRow .p2-dismissBtn { flex: 1; padding: 14px 18px; }
+#ar-phase-2-host .p2-actionRow .p2-shareBtn {
+  flex: 0 0 auto;
+  height: 56px;
+  padding: 15px 32px;
+  background: #ffffff;
+  border: 1px solid #d1a796;
+  border-radius: 8px;
+  color: #af413a;
+  font-family: "Reddit Sans", var(--font-sans);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+  text-align: center;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+#ar-phase-2-host .p2-actionRow .p2-shareBtn:active { transform: scale(0.98); background: #fff5f1; }
+#ar-phase-2-host .p2-actionRow .p2-dismissBtn {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 56px;
+  padding: 15px 20px;
+  background: #af413a;
+  border: 1px solid #d1a796;
+  border-radius: 8px;
+  color: #ffffff;
+  font-family: "Reddit Sans", var(--font-sans);
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  transition: background-color 0.18s ease, transform 0.18s ease;
+}
+#ar-phase-2-host .p2-actionRow .p2-dismissBtn:active { transform: scale(0.98); background: #93372f; }
+#ar-phase-2-host .p2-dismissBtnTitle {
+  font-weight: 800;
+  font-size: 14px;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+}
+#ar-phase-2-host .p2-dismissBtnSub {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 1.2;
+  letter-spacing: -0.04em;
+  opacity: 0.8;
+}
 
 @keyframes p2-celebrateBounce {
   0%   { transform: scale(0.6); opacity: 0; }

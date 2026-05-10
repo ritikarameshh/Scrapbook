@@ -59,8 +59,20 @@ const TEMPLATE = `
   </div>
 
   <div class="p2-loadingScreen">
-    <div class="p2-spinner"></div>
-    <div class="p2-loadingText">Loading the stamp…</div>
+    <div class="p2-loadingHeader">
+      <p class="p2-loadingEyebrow">You found</p>
+      <h1 class="p2-loadingTitle">The Metropolitan Museum of Art</h1>
+    </div>
+    <div class="p2-loadingBody">
+      <p class="p2-loadingPrompt">Find this stamp around you and grab it!</p>
+      <div class="p2-loadingStamp">
+        <img src="./Assets/MetStamp.png" alt="The Metropolitan Museum of Art stamp" />
+      </div>
+    </div>
+    <div class="p2-loadingFooter">
+      <div class="p2-spinner" aria-hidden="true"></div>
+      <div class="p2-loadingText">Firing up</div>
+    </div>
   </div>
 
   <div class="p2-errorScreen">
@@ -75,14 +87,20 @@ const TEMPLATE = `
   <div class="p2-factsBackdrop"></div>
   <div class="p2-factsModal">
     <div class="p2-factsCard">
-      <div class="p2-grabber"></div>
-      <img class="p2-stampSnapshot" alt="Collected stamp" />
-      <p class="p2-eyebrow">Stamp Discovered</p>
-      <h2 class="p2-factsTitle">Fun Fact</h2>
-      <div class="p2-featuredFact"></div>
+      <h2 class="p2-factsTitle">Stamp found!</h2>
+      <div class="p2-stampViewer">
+        <canvas class="p2-stampViewerCanvas" aria-hidden="true"></canvas>
+      </div>
+      <div class="p2-factsCallout">
+        <p class="p2-factsEyebrow">Did you know</p>
+        <p class="p2-featuredFact"></p>
+      </div>
       <div class="p2-actionRow">
-        <button class="btn btn-ghost p2-shareBtn" type="button">Share</button>
-        <button class="btn btn-primary p2-dismissBtn" type="button">Find more places</button>
+        <button class="p2-shareBtn" type="button">Share</button>
+        <button class="p2-dismissBtn" type="button">
+          <span class="p2-dismissBtnTitle">See 3 local favorites</span>
+          <span class="p2-dismissBtnSub">All &lt; 5 min away</span>
+        </button>
       </div>
     </div>
   </div>
@@ -100,14 +118,24 @@ export async function startPhase2Hunt({
   host,
   onCollected,
   onError,
-  stampUrl = './Assets/rodeo_coin.gltf',
-  stampName = 'The Mystic Orb',
+  stampUrl = './Assets/MetStamp.gltf',
+  stampName = 'The Metropolitan Museum of Art',
+  stampImage = './Assets/MetStamp.png',
   /** When set, reuse this element’s stream (e.g. MindAR video) instead of opening a new camera. */
   sharedVideoElement = null,
   funFacts = [
-    'This stamp has been waiting for the right traveler.',
-    'Locals say the building above hides a story for every window.',
-    'Light hits this corner just before sunset — that\'s when it glows.',
+    {
+      lead: 'The Met is home to the Egyptian Temple of Dendur that has been restored entirely inside the building.',
+      body: 'You can see it in the Egyptian Gallery inside!',
+    },
+    {
+      lead: 'The Met opened in 1872 in a Fifth Avenue building it has long since outgrown.',
+      body: 'Today it spans over 2 million square feet across three locations.',
+    },
+    {
+      lead: 'The Met holds more than 1.5 million works of art spanning 5,000 years of human creativity.',
+      body: 'You could visit every day for a year and still not see it all.',
+    },
   ],
 }) {
   if (activeInstance) stopPhase2Hunt();
@@ -144,6 +172,8 @@ export async function startPhase2Hunt({
   const shockwave     = $('.p2-shockwave');
   const loadingScreen = $('.p2-loadingScreen');
   const loadingText   = $('.p2-loadingText');
+  const loadingTitle  = $('.p2-loadingTitle');
+  const loadingStampImg = $('.p2-loadingStamp img');
   const errorScreen   = $('.p2-errorScreen');
   const errorTitle    = $('.p2-errorTitle');
   const errorMsg      = $('.p2-errorMsg');
@@ -153,7 +183,7 @@ export async function startPhase2Hunt({
   const confettiContainer = $('.p2-confettiContainer');
   const factsBackdrop = $('.p2-factsBackdrop');
   const factsModal    = $('.p2-factsModal');
-  const stampSnapshot = $('.p2-stampSnapshot');
+  const stampViewerCanvas = $('.p2-stampViewerCanvas');
   const featuredFactEl = $('.p2-featuredFact');
   const shareBtn      = $('.p2-shareBtn');
   const dismissBtn    = $('.p2-dismissBtn');
@@ -234,7 +264,14 @@ export async function startPhase2Hunt({
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight, 0.05, 100);
     camera.position.set(0, 0, 0);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.55));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.62));
+    const headLight = new THREE.DirectionalLight(0xfff8f2, 1.55);
+    headLight.position.set(0, 0.12, 0.08);
+    const headLightTarget = new THREE.Object3D();
+    headLightTarget.position.set(0, 0, -1);
+    camera.add(headLightTarget);
+    headLight.target = headLightTarget;
+    camera.add(headLight);
     const point = new THREE.PointLight(0xffffff, 1.2, 30);
     point.position.set(2, 3, 2);
     scene.add(point);
@@ -254,6 +291,13 @@ export async function startPhase2Hunt({
       recomputeHudLocalPosition();
       stampRoot.position.copy(HUD_LOCAL_POSITION);
     }
+  }
+
+  function forEachMeshMaterial(mesh, fn) {
+    if (!mesh.isMesh || !mesh.material) return;
+    const mats = mesh.material;
+    if (Array.isArray(mats)) mats.forEach(fn);
+    else fn(mats);
   }
 
   /* ---- Stamp loading ---- */
@@ -279,13 +323,15 @@ export async function startPhase2Hunt({
           worldPosition: STAMP_POSITION.clone(),
           isHud: false,
         };
-        stampRoot.traverse(obj => {
-          if (obj.isMesh) {
-            obj.material.transparent = true;
-            obj.material.opacity = 0;
-            obj.castShadow = false;
-            obj.receiveShadow = false;
-          }
+        stampRoot.traverse((obj) => {
+          if (!obj.isMesh) return;
+          forEachMeshMaterial(obj, (m) => {
+            m.transparent = true;
+            m.opacity = 0;
+            if (m.map) m.map.colorSpace = THREE.SRGBColorSpace;
+          });
+          obj.castShadow = false;
+          obj.receiveShadow = false;
         });
         baseStampScale = stampRoot.scale.x;
         scene.add(stampRoot);
@@ -297,8 +343,12 @@ export async function startPhase2Hunt({
 
   function setStampOpacity(o) {
     if (!stampRoot) return;
-    stampRoot.traverse(obj => {
-      if (obj.isMesh && obj.material) { obj.material.transparent = true; obj.material.opacity = o; }
+    stampRoot.traverse((obj) => {
+      if (!obj.isMesh) return;
+      forEachMeshMaterial(obj, (m) => {
+        m.transparent = true;
+        m.opacity = o;
+      });
     });
   }
 
@@ -685,11 +735,14 @@ export async function startPhase2Hunt({
   }
   function setStampEmissive(color, intensity) {
     if (!stampRoot) return;
-    stampRoot.traverse(obj => {
-      if (obj.isMesh && obj.material && 'emissive' in obj.material) {
-        obj.material.emissive.setHex(color);
-        obj.material.emissiveIntensity = intensity;
-      }
+    stampRoot.traverse((obj) => {
+      if (!obj.isMesh) return;
+      forEachMeshMaterial(obj, (m) => {
+        if ('emissive' in m) {
+          m.emissive.setHex(color);
+          m.emissiveIntensity = intensity;
+        }
+      });
     });
   }
   function tickCollection(dt) {
@@ -1036,60 +1089,137 @@ export async function startPhase2Hunt({
     renderer.render(scene, camera);
   }
 
-  /* ---- Snapshot ---- */
-  let stampSnapshotUrl = null;
-  function captureStampSnapshot() {
-    if (!stampReady || !stampRoot || stampSnapshotUrl) return;
-    const SIZE = 256;
-    const offCanvas = document.createElement('canvas');
-    offCanvas.width = SIZE; offCanvas.height = SIZE;
-    const offRenderer = new THREE.WebGLRenderer({
-      canvas: offCanvas, alpha: true, antialias: true, premultipliedAlpha: true,
+  /* ---- Stamp viewer (live mini three.js scene shown inside the facts modal) ---- */
+  let stampViewer = null;
+  function initStampViewer() {
+    if (stampViewer || !stampReady || !stampRoot || !stampViewerCanvas) return;
+
+    const renderer = new THREE.WebGLRenderer({
+      canvas: stampViewerCanvas, alpha: true, antialias: true, premultipliedAlpha: true,
     });
-    offRenderer.setPixelRatio(2);
-    offRenderer.setSize(SIZE, SIZE, false);
-    offRenderer.outputColorSpace = THREE.SRGBColorSpace;
-    offRenderer.toneMapping = THREE.ACESFilmicToneMapping;
-    offRenderer.setClearColor(0x000000, 0);
-    const offScene = new THREE.Scene();
-    offScene.add(new THREE.AmbientLight(0xffffff, 0.85));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.setClearColor(0x000000, 0);
+
+    const viewerScene = new THREE.Scene();
+    viewerScene.add(new THREE.AmbientLight(0xffffff, 0.9));
     const key = new THREE.DirectionalLight(0xffffff, 1.6);
-    key.position.set(2, 3, 4); offScene.add(key);
+    key.position.set(2, 3, 4); viewerScene.add(key);
     const fill = new THREE.DirectionalLight(0xE8AE3D, 0.55);
-    fill.position.set(-2, 1, 2); offScene.add(fill);
-    const clone = stampRoot.clone(true);
-    clone.position.set(0, 0, 0);
-    clone.rotation.set(-0.25, 0.45, 0);
-    clone.traverse(obj => {
-      if (obj.isMesh && obj.material) {
-        const m = obj.material.clone();
-        m.transparent = false; m.opacity = 1;
-        if ('emissive' in m) { m.emissive.setHex(0x000000); m.emissiveIntensity = 0; }
-        obj.material = m;
-      }
+    fill.position.set(-2, 1, 2); viewerScene.add(fill);
+
+    const root = stampRoot.clone(true);
+    root.traverse((obj) => {
+      if (!obj.isMesh || !obj.material) return;
+      const setSolid = (m) => {
+        const c = m.clone();
+        c.transparent = false;
+        c.opacity = 1;
+        if ('emissive' in c) { c.emissive.setHex(0x000000); c.emissiveIntensity = 0; }
+        return c;
+      };
+      obj.material = Array.isArray(obj.material)
+        ? obj.material.map(setSolid)
+        : setSolid(obj.material);
     });
-    offScene.add(clone);
-    const box = new THREE.Box3().setFromObject(clone);
+
+    const box = new THREE.Box3().setFromObject(root);
     const size = new THREE.Vector3(); box.getSize(size);
+    const center = new THREE.Vector3(); box.getCenter(center);
+    root.position.sub(center);
+
+    const pivot = new THREE.Group();
+    pivot.add(root);
+    viewerScene.add(pivot);
+
     const radius = Math.max(size.x, size.y, size.z) * 0.5 || 0.3;
     const fov = 38;
-    const dist = (radius / Math.tan(THREE.MathUtils.degToRad(fov / 2))) * 1.35;
-    const offCam = new THREE.PerspectiveCamera(fov, 1, 0.01, 100);
-    offCam.position.set(0, 0, dist);
-    offCam.lookAt(0, 0, 0);
-    offRenderer.render(offScene, offCam);
-    stampSnapshotUrl = offCanvas.toDataURL('image/png');
-    offRenderer.dispose();
-    if (stampSnapshot) stampSnapshot.src = stampSnapshotUrl;
+    const dist = (radius / Math.tan(THREE.MathUtils.degToRad(fov / 2))) * 1.45;
+    const cam = new THREE.PerspectiveCamera(fov, 1, 0.01, 100);
+    cam.position.set(0, 0, dist);
+    cam.lookAt(0, 0, 0);
+
+    // Pose the stamp once with a subtle face-on tilt — no rotation animation in
+    // the modal. The gentle vertical bob is provided by the CSS animation on
+    // .p2-stampViewer so the WebGL scene can stay completely static.
+    pivot.rotation.set(0, 0, 0);
+
+    const renderOnce = () => {
+      try { renderer.render(viewerScene, cam); } catch (_) {}
+    };
+    const resize = () => {
+      const rect = stampViewerCanvas.getBoundingClientRect();
+      const w = Math.max(1, Math.floor(rect.width));
+      const h = Math.max(1, Math.floor(rect.height));
+      renderer.setSize(w, h, false);
+      cam.aspect = w / Math.max(1, h);
+      cam.updateProjectionMatrix();
+      renderOnce();
+    };
+    const observer = (typeof ResizeObserver === 'function')
+      ? new ResizeObserver(resize)
+      : null;
+    if (observer) observer.observe(stampViewerCanvas);
+
+    stampViewer = {
+      renderer, scene: viewerScene, camera: cam, pivot, observer,
+      resize, renderOnce, running: false,
+    };
+    resize();
+  }
+  function startStampViewer() {
+    if (!stampViewer) initStampViewer();
+    if (!stampViewer || stampViewer.running) return;
+    stampViewer.running = true;
+    // Make sure the canvas has a fresh frame each time the modal opens (the
+    // viewer is otherwise static).
+    stampViewer.resize();
+  }
+  function stopStampViewer() {
+    if (!stampViewer) return;
+    stampViewer.running = false;
+  }
+  function disposeStampViewer() {
+    if (!stampViewer) return;
+    stopStampViewer();
+    try { stampViewer.observer && stampViewer.observer.disconnect(); } catch (_) {}
+    try {
+      stampViewer.renderer.dispose();
+      stampViewer.renderer.forceContextLoss && stampViewer.renderer.forceContextLoss();
+    } catch (_) {}
+    stampViewer = null;
   }
 
   /* ---- Facts modal ---- */
   function pickFeaturedFact() {
-    if (!FUN_FACTS || FUN_FACTS.length === 0) return '';
+    if (!FUN_FACTS || FUN_FACTS.length === 0) return null;
     return FUN_FACTS[(Math.random() * FUN_FACTS.length) | 0];
   }
+  function renderFeaturedFact(fact) {
+    if (!featuredFactEl) return;
+    featuredFactEl.innerHTML = '';
+    if (!fact) return;
+    if (typeof fact === 'string') {
+      featuredFactEl.textContent = fact;
+      return;
+    }
+    if (fact.lead) {
+      const lead = document.createElement('strong');
+      lead.className = 'p2-factLead';
+      lead.textContent = fact.lead;
+      featuredFactEl.appendChild(lead);
+    }
+    if (fact.body) {
+      if (fact.lead) featuredFactEl.appendChild(document.createTextNode(' '));
+      const body = document.createElement('span');
+      body.className = 'p2-factBody';
+      body.textContent = fact.body;
+      featuredFactEl.appendChild(body);
+    }
+  }
   function showFactsModal() {
-    featuredFactEl.textContent = pickFeaturedFact();
+    renderFeaturedFact(pickFeaturedFact());
     factsBackdrop.classList.add('p2-visible');
     factsModal.classList.add('p2-visible');
     factsModal.classList.remove('p2-celebrating');
@@ -1097,11 +1227,14 @@ export async function startPhase2Hunt({
     factsModal.classList.add('p2-celebrating');
     setState(STATES.FACTS_SHOWN);
     triggerCelebration();
+    // Defer one frame so the canvas has a layout box before sizing the renderer.
+    requestAnimationFrame(() => startStampViewer());
   }
   function hideFactsModal() {
     factsBackdrop.classList.remove('p2-visible');
     factsModal.classList.remove('p2-visible');
     factsModal.classList.remove('p2-celebrating');
+    stopStampViewer();
     setState(STATES.COLLECTED);
   }
 
@@ -1192,8 +1325,18 @@ export async function startPhase2Hunt({
   /* ---- Boot ---- */
   let stopped = false;
   hideError();
+  if (loadingTitle) loadingTitle.textContent = STAMP_NAME;
+  if (loadingStampImg && stampImage) {
+    loadingStampImg.src = stampImage;
+    loadingStampImg.alt = `${STAMP_NAME} stamp`;
+  }
   loadingScreen.classList.remove('p2-hidden');
-  loadingText.textContent = ownsCameraStream ? 'Requesting camera…' : 'Syncing with AR camera…';
+  loadingText.textContent = ownsCameraStream ? 'Firing up camera' : 'Syncing camera';
+
+  // Keep the loading screen up long enough to actually read the heading and prompt.
+  // Should comfortably outlast the staggered entrance animations (~1.55s + 0.5s).
+  const LOADING_MIN_VISIBLE_MS = 3000;
+  const loadingShownAt = performance.now();
 
   const orientPerm = requestOrientationPermission();
   const camStream = ownsCameraStream ? requestCameraStream() : Promise.resolve(null);
@@ -1216,6 +1359,7 @@ export async function startPhase2Hunt({
       try { target.removeEventListener(ev, fn, opts); } catch (_) {}
     }
     winListeners.length = 0;
+    try { disposeStampViewer(); } catch (_) {}
     try {
       if (renderer) {
         renderer.dispose();
@@ -1234,11 +1378,11 @@ export async function startPhase2Hunt({
     const camOK = await attachCameraStream(camStream);
     if (stopped || !camOK) return;
 
-    loadingText.textContent = 'Setting up the world…';
+    loadingText.textContent = 'Setting the scene';
     initThree();
     onResize();
 
-    loadingText.textContent = 'Loading the stamp…';
+    loadingText.textContent = 'Loading the stamp';
     try { await loadStamp(); }
     catch (err) {
       showError('Could not load stamp',
@@ -1247,9 +1391,8 @@ export async function startPhase2Hunt({
       return;
     }
     if (stopped) return;
-    try { captureStampSnapshot(); } catch (e) { console.warn('[phase2-hunt] snapshot failed', e); }
 
-    loadingText.textContent = 'Calibrating motion…';
+    loadingText.textContent = 'Calibrating motion';
     compassHint.classList.add('p2-visible');
     await initDeviceOrientation(orientPerm);
     if (stopped) return;
@@ -1258,12 +1401,18 @@ export async function startPhase2Hunt({
       placeStampOffscreenFromCurrentView();
     }
 
-    loadingText.textContent = 'Spinning up hand tracking…';
+    loadingText.textContent = 'Tuning hand tracking';
     await initMediaPipe();
     if (stopped) return;
 
     if (!orientationSupported) startOpticalFlow();
     if (!stampPlacedFromOrientation) placeStampOffscreenFromCurrentView();
+
+    const remaining = LOADING_MIN_VISIBLE_MS - (performance.now() - loadingShownAt);
+    if (remaining > 0) {
+      await new Promise((r) => setTimeout(r, remaining));
+      if (stopped) return;
+    }
 
     loadingScreen.classList.add('p2-hidden');
     setState(STATES.SEARCHING);
