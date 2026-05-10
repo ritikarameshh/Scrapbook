@@ -5,6 +5,10 @@
 import { OUTLINE_SRC } from './ar-config.js';
 import { getArPhase, getArSceneEl } from './session-state.js';
 
+/** Phase 4 banner copy (Figma node 71:265). */
+export const OUTLINE_PHASE_HINT_TEXT =
+  'Find this outline around you and match it to unlock your stamp!';
+
 const ALIGNMENT_THRESHOLD = 0.50;
 const ALIGNMENT_SUSTAIN_MS = 1000;
 const ALIGNMENT_TICK_MS = 100;
@@ -25,7 +29,7 @@ export function resetOutlineHint() {
   if (hint) {
     hint.classList.remove('ar-hint-insecure');
     hint.classList.remove('landmark-hint');
-    hint.textContent = 'Match the outline to what you see';
+    hint.textContent = OUTLINE_PHASE_HINT_TEXT;
   }
 }
 
@@ -55,7 +59,7 @@ function prepareOutlineUI(outlineSrc) {
   }
   if (imgEl) imgEl.style.setProperty('--outline-src', `url("${outlineSrc}")`);
   if (scoreEl) scoreEl.textContent = '—';
-  if (hintEl) hintEl.textContent = 'Match the outline to what you see';
+  if (hintEl) hintEl.textContent = OUTLINE_PHASE_HINT_TEXT;
 
   buildOutlineMask(outlineSrc);
 }
