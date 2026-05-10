@@ -293,6 +293,7 @@ p { margin: 0; }
   margin: 4px 0 18px;
 }
 .screen-splash .btn { width: 100%; }
+.screen-splash .splash-test-phase4 { margin-top: 0.6rem; font-size: 0.875rem; }
 
 /* ============ Stamp disc ============ */
 .stamp-disc {

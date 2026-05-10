@@ -186,7 +186,7 @@ function collectStamp() {
 }
 
 /**
- * @param {{ go: (name: string) => void; showCameraError?: (msg: string) => void; hideCameraError?: () => void; showHintError?: (msg: string) => void }} opts
+ * @param {{ go: (name: string) => void; showCameraError?: (msg: string) => void; hideCameraError?: () => void; showHintError?: (msg: string) => void; testJumpPhase4?: boolean }} opts
  */
 export function startARSession(opts) {
   bindGemUiOnce();
@@ -194,6 +194,7 @@ export function startARSession(opts) {
   showCameraError = opts.showCameraError ?? null;
   hideCameraError = opts.hideCameraError ?? null;
   showHintError = opts.showHintError ?? null;
+  const testJumpPhase4 = opts.testJumpPhase4 === true;
 
   const container = document.getElementById('ar-scan-container');
   if (!container) return;
@@ -218,6 +219,13 @@ export function startARSession(opts) {
       if (!sceneEl) return;
 
       hideCameraError?.();
+
+      if (testJumpPhase4) {
+        beginPhase4OutlineFlow();
+        warnInsecureContext();
+        return;
+      }
+
       setArPhase(1);
       setARPhaseUI(1);
 

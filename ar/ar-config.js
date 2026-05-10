@@ -2,7 +2,7 @@
 
 export const LANDMARK_MIND_SRC = './met-detection/targets.mind';
 
-export const OUTLINE_SRC = 'Assets/HiddenGem.auto.png';
+export const OUTLINE_SRC = new URL('../Assets/LexingtonCandyShop.auto.png', import.meta.url).href;
 
 export const HIDDEN_GEMS = [
   { id: 'pub', title: 'A 100 year old pub', type: 'Pub', walkMin: 4, color: '#8C5A1A' },

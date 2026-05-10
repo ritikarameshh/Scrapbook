@@ -5,13 +5,13 @@
 import { OUTLINE_SRC } from './ar-config.js';
 import { getArPhase, getArSceneEl } from './session-state.js';
 
-const ALIGNMENT_THRESHOLD = 0.57;
+const ALIGNMENT_THRESHOLD = 0.50;
 const ALIGNMENT_SUSTAIN_MS = 1000;
 const ALIGNMENT_TICK_MS = 100;
 const VISUAL_GRID_W = 192;
 const VISUAL_GRID_H = 256;
 const VISUAL_EDGE_THRESHOLD = 60;
-const VISUAL_TOLERANCE_PX = 4;
+const VISUAL_TOLERANCE_PX = 3;
 
 let alignmentTickerId = null;
 let alignmentSustainStart = 0;

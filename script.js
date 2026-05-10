@@ -44,6 +44,9 @@ import * as arOrchestrator from './ar/ar-orchestrator.js';
 const screens = document.querySelectorAll('.screen');
 const navHistory = ['splash'];
 
+/** When true, the next AR session skips MindAR phase 1 and opens phase 4 (outline) for testing. */
+let nextArStartTestPhase4 = false;
+
 function show(name) {
   const target = document.querySelector(`.screen[data-screen="${name}"]`);
   if (!target) return;
@@ -84,6 +87,7 @@ document.addEventListener('click', (e) => {
     return;
   }
   if (goBtn) {
+    nextArStartTestPhase4 = goBtn.dataset.testPhase4 === 'true';
     go(goBtn.dataset.go);
     return;
   }
@@ -130,11 +134,14 @@ function stopAR() {
 }
 
 function startAR() {
+  const testJumpPhase4 = nextArStartTestPhase4;
+  nextArStartTestPhase4 = false;
   arOrchestrator.startARSession({
     go,
     showCameraError: showARCameraError,
     hideCameraError: hideARCameraError,
     showHintError: showARError,
+    testJumpPhase4,
   });
 }
 
