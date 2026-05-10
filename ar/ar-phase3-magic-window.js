@@ -215,6 +215,7 @@ export function mount(container, mindarVideoEl, mindarSceneEl) {
       <a-light type="ambient" color="#ffffff" intensity="0.92"></a-light>
       <a-camera position="0 0 0"
         look-controls="enabled: true; touchEnabled: false; mouseEnabled: false; magicWindowTrackingEnabled: true">
+        <a-light type="directional" color="#fff8f2" intensity="1.35" position="0 0.06 0"></a-light>
         <a-entity cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .gem-pin; far: 50"></a-entity>
       </a-camera>
     </a-scene>`;

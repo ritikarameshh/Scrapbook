@@ -13,6 +13,26 @@ let phase2HuntModule = null;
 let phase1LandmarkMatched = false;
 let pendingSecondSpotCompletion = false;
 
+/** Phase 2 content for the first stamp (landmark) — The Met. */
+const PHASE2_LANDMARK_CONFIG = {
+  stampUrl: './Assets/MetStamp.gltf',
+  // stampName / stampImage / funFacts intentionally omitted so phase2-hunt.js
+  // falls back to its Met defaults.
+};
+
+/** Phase 2 content for the second-spot stamp (after Phase 4) — Lexington Candy Shop. */
+const PHASE2_SECOND_SPOT_CONFIG = {
+  stampUrl: './Assets/LexingtonCandyShop/LCS.gltf',
+  stampName: 'Lexington Candy Shop',
+  stampImage: './Assets/Stamps/LexingtonCandyShop.png',
+  funFacts: [
+    {
+      lead: 'This 100 year old diner serves Coca Cola the old-fashioned way by mixing hand-pumped syrup with soda.',
+      body: 'Their coke floats, malteds and egg creams are must-trys!',
+    },
+  ],
+};
+
 /** @type {((name: string) => void) | null} */
 let navigateGo = null;
 
@@ -84,6 +104,13 @@ function bindGemUiOnce() {
       }
       console.log('[hidden-gem] go:', phasePins.getCurrentGemId());
       phasePins.showGemToast('Heading there… (placeholder)');
+      return;
+    }
+    if (t.closest('[data-gem-save]')) {
+      e.stopPropagation();
+      // Demo: spot is not actually persisted — Spots tab is prepopulated.
+      // Just confirm the action visually.
+      phasePins.showGemToast('Saved for later');
     }
   });
 }
@@ -123,10 +150,11 @@ async function transitionToPhase2(options = {}) {
 
   try {
     if (!phase2HuntModule) phase2HuntModule = await import('../phase2-hunt.js');
+    const phase2Config = secondSpotStamp ? PHASE2_SECOND_SPOT_CONFIG : PHASE2_LANDMARK_CONFIG;
     await phase2HuntModule.startPhase2Hunt({
       host,
       sharedVideoElement: video || undefined,
-      stampUrl: './Assets/rodeo_coin.gltf',
+      ...phase2Config,
       onCollected: collectStamp,
       onError: (msg) => showHintError?.(msg),
     });

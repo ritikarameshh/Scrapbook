@@ -114,12 +114,21 @@
   ],
   "nodes": [
     {
+      "name": "AuxScene",
       "children": [
         1
       ]
     },
     {
+      "children": [
+        2
+      ]
+    },
+    {
       "name": "mesh_0",
+      "extras": {
+        "name": "mesh_0"
+      },
       "mesh": 0
     }
   ],

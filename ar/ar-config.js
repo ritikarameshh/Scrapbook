@@ -5,13 +5,22 @@ export const LANDMARK_MIND_SRC = './met-detection/targets.mind';
 export const OUTLINE_SRC = new URL('../Assets/LexingtonCandyShop.auto.png', import.meta.url).href;
 
 export const HIDDEN_GEMS = [
-  { id: 'pub', title: 'A 100 year old pub', type: 'Pub', walkMin: 4, color: '#8C5A1A' },
   {
-    id: 'gallery',
-    title: 'A gallery where you can hear whispers across the room',
-    type: 'Gallery',
+    id: 'pub',
+    title: 'A 100 year old pub',
+    type: 'Pub',
+    walkMin: 4,
+    color: '#8C5A1A',
+    /** Address used when building Google Maps directions URLs. */
+    mapsQuery: 'McSorleys Old Ale House, New York, NY',
+  },
+  {
+    id: 'lexington-candy',
+    title: 'A 100 year old diner famous for maintaining heritage',
+    type: 'Food',
     walkMin: 7,
     color: '#3F5532',
+    mapsQuery: 'Lexington Candy Shop, 1226 Lexington Ave, New York, NY',
   },
   {
     id: 'install',
@@ -19,6 +28,7 @@ export const HIDDEN_GEMS = [
     type: 'Art install.',
     walkMin: 11,
     color: '#E26E5F',
+    mapsQuery: 'The Vessel at Hudson Yards, New York, NY',
   },
 ];
 

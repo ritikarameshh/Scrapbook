@@ -35,6 +35,7 @@ export function mountPersistentMindARScene(container, opts = {}) {
       <a-entity id="phase3-world-root" position="0 0 0"></a-entity>
       <a-camera id="ar-flow-camera" position="0 0 0"
         look-controls="enabled: false; touchEnabled: false; mouseEnabled: false; magicWindowTrackingEnabled: true">
+        <a-light type="directional" color="#fff8f2" intensity="1.35" position="0 0.06 0"></a-light>
         <a-entity cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .gem-pin; far: 50"></a-entity>
       </a-camera>
       <a-entity id="landmark-anchor-0" mindar-image-target="targetIndex: 0"></a-entity>

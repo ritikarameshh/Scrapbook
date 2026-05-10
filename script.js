@@ -4,6 +4,7 @@
  * emits arError VIDEO_FAIL. Retry once with any available camera.
  */
 import * as arOrchestrator from './ar/ar-orchestrator.js';
+import * as savedSpots from './saved-spots.js';
 
 (function installRelaxedCameraGetUserMedia() {
   if (typeof window === 'undefined' || window.__scrapbookGumPatched) return;
@@ -60,8 +61,29 @@ function show(name) {
 
   const body = target.querySelector('.screen-body');
   if (body) body.scrollTop = 0;
+  const homeMain = target.querySelector('.home-stamps');
+  if (homeMain) homeMain.scrollTop = 0;
+
+  if (name === 'spots') savedSpots.renderSpotsScreen();
+  syncTabbarActive(name);
 
   if (name === 'ar-scan') startAR();
+}
+
+/**
+ * Update the bottom tab bar active state across every tabbar instance to reflect
+ * the current screen. The "Book" tab represents the home/stamps screen.
+ */
+function syncTabbarActive(screenName) {
+  const tabName = screenName === 'home' ? 'home' : screenName;
+  document.querySelectorAll('[data-app-tabbar]').forEach((bar) => {
+    bar.querySelectorAll('.tab-btn').forEach((btn) => {
+      const active = btn.dataset.tab === tabName;
+      btn.classList.toggle('active', active);
+      if (active) btn.setAttribute('aria-current', 'page');
+      else btn.removeAttribute('aria-current');
+    });
+  });
 }
 
 function go(name) {
@@ -160,6 +182,10 @@ function startAR() {
     testJumpPhase4,
   });
 }
+
+// ============ Saved spots ============
+savedSpots.bindSpotsScreen();
+savedSpots.renderSpotsScreen();
 
 // ============ Boot ============
 show('splash');

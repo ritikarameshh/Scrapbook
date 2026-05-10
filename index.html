@@ -28,8 +28,8 @@
         <button type="button" class="btn btn-ghost btn-block splash-test-phase4" data-go="ar-scan" data-test-phase4="true">Dev: jump to phase 4 (outline)</button>
       </section>
 
-      <!-- ============ HOME — TRIP STAMPS ============ -->
-      <section class="screen screen-home" data-screen="home">
+      <!-- ============ HOME — TRIP STAMPS (Book tab) ============ -->
+      <section class="screen screen-home has-tabs" data-screen="home">
         <main class="home-stamps">
           <header class="home-stamps-header">
             <h1>Your stamps</h1>
@@ -93,6 +93,100 @@
             </div>
           </div>
         </main>
+        <nav class="tabbar" data-app-tabbar aria-label="Primary">
+          <button class="tab-btn" type="button" data-go="spots" data-tab="spots">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a7 7 0 0 0-7 7c0 5.25 7 12 7 12s7-6.75 7-12a7 7 0 0 0-7-7z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+            <span>Spots</span>
+          </button>
+          <button class="tab-btn active" type="button" data-go="home" data-tab="home" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h11a3 3 0 0 1 3 3V19a.5.5 0 0 1-.5.5H8a3 3 0 0 1-3-3V4.5z"/><path d="M5 16.5a3 3 0 0 1 3-3h11"/></svg>
+            <span>Book</span>
+          </button>
+          <button class="tab-btn" type="button" data-go="feed" data-tab="feed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="6" rx="1.5"/><rect x="3.5" y="14" width="17" height="6" rx="1.5"/></svg>
+            <span>Feed</span>
+          </button>
+          <button class="tab-btn" type="button" data-go="you" data-tab="you">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.75"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+            <span>You</span>
+          </button>
+        </nav>
+      </section>
+
+      <!-- ============ SPOTS — saved hidden gems ============ -->
+      <section class="screen screen-spots has-tabs" data-screen="spots">
+        <header class="spots-header">
+          <h1 class="spots-title">Saved spots</h1>
+          <p class="spots-sub">Hidden gems you bookmarked from AR.</p>
+        </header>
+        <main class="screen-body spots-body">
+          <div id="saved-spots-empty" class="saved-spots-empty">
+            <div class="saved-spots-empty-art" aria-hidden="true">
+              <svg viewBox="0 0 64 64">
+                <path d="M22 10h20a4 4 0 0 1 4 4v40l-14-8-14 8V14a4 4 0 0 1 4-4z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h2>No spots saved yet</h2>
+            <p>When AR shows you a hidden gem, tap "Save for later" to keep it here.</p>
+          </div>
+          <div id="saved-spots-list" class="saved-spots-list" hidden></div>
+        </main>
+        <nav class="tabbar" data-app-tabbar aria-label="Primary">
+          <button class="tab-btn active" type="button" data-go="spots" data-tab="spots" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a7 7 0 0 0-7 7c0 5.25 7 12 7 12s7-6.75 7-12a7 7 0 0 0-7-7z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+            <span>Spots</span>
+          </button>
+          <button class="tab-btn" type="button" data-go="home" data-tab="home">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h11a3 3 0 0 1 3 3V19a.5.5 0 0 1-.5.5H8a3 3 0 0 1-3-3V4.5z"/><path d="M5 16.5a3 3 0 0 1 3-3h11"/></svg>
+            <span>Book</span>
+          </button>
+          <button class="tab-btn" type="button" data-go="feed" data-tab="feed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="6" rx="1.5"/><rect x="3.5" y="14" width="17" height="6" rx="1.5"/></svg>
+            <span>Feed</span>
+          </button>
+          <button class="tab-btn" type="button" data-go="you" data-tab="you">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.75"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+            <span>You</span>
+          </button>
+        </nav>
+      </section>
+
+      <!-- ============ FEED — placeholder ============ -->
+      <section class="screen screen-feed has-tabs" data-screen="feed">
+        <header class="spots-header">
+          <h1 class="spots-title">Feed</h1>
+          <p class="spots-sub">Coming soon.</p>
+        </header>
+        <main class="screen-body feed-body">
+          <div class="feed-placeholder">
+            <div class="saved-spots-empty-art" aria-hidden="true">
+              <svg viewBox="0 0 64 64">
+                <rect x="10" y="14" width="44" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/>
+                <rect x="10" y="36" width="44" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/>
+              </svg>
+            </div>
+            <h2>Your friends' trips</h2>
+            <p>The feed is on its way. Check back soon.</p>
+          </div>
+        </main>
+        <nav class="tabbar" data-app-tabbar aria-label="Primary">
+          <button class="tab-btn" type="button" data-go="spots" data-tab="spots">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a7 7 0 0 0-7 7c0 5.25 7 12 7 12s7-6.75 7-12a7 7 0 0 0-7-7z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+            <span>Spots</span>
+          </button>
+          <button class="tab-btn" type="button" data-go="home" data-tab="home">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h11a3 3 0 0 1 3 3V19a.5.5 0 0 1-.5.5H8a3 3 0 0 1-3-3V4.5z"/><path d="M5 16.5a3 3 0 0 1 3-3h11"/></svg>
+            <span>Book</span>
+          </button>
+          <button class="tab-btn active" type="button" data-go="feed" data-tab="feed" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="6" rx="1.5"/><rect x="3.5" y="14" width="17" height="6" rx="1.5"/></svg>
+            <span>Feed</span>
+          </button>
+          <button class="tab-btn" type="button" data-go="you" data-tab="you">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.75"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+            <span>You</span>
+          </button>
+        </nav>
       </section>
 
       <!-- ============ AR SCAN ============ -->
@@ -145,7 +239,15 @@
               <p class="gem-detail-type" data-gem-type></p>
               <h3 class="gem-detail-title" data-gem-title></h3>
               <p class="gem-detail-meta"><span data-gem-walk></span></p>
-              <button type="button" class="btn btn-primary btn-block" data-gem-go>Go →</button>
+              <div class="gem-detail-actions">
+                <button type="button" class="btn btn-ghost gem-detail-save" data-gem-save>
+                  <svg class="gem-detail-save-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 4h12a1 1 0 0 1 1 1v16l-7-4-7 4V5a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  </svg>
+                  <span>Save for later</span>
+                </button>
+                <button type="button" class="btn btn-primary" data-gem-go>Go →</button>
+              </div>
             </div>
 
             <div id="gem-toast" class="gem-toast" hidden></div>
@@ -395,7 +497,7 @@
       </section>
 
       <!-- ============ YOU ============ -->
-      <section class="screen" data-screen="you">
+      <section class="screen has-tabs" data-screen="you">
         <header class="topbar"><span class="topbar-spacer"></span><strong class="topbar-title">You</strong><button class="icon-btn ghost">⚙</button></header>
         <main class="screen-body">
           <div class="you-card">
@@ -425,6 +527,24 @@
             <span class="friend-av av-3">+</span>
           </div>
         </main>
+        <nav class="tabbar" data-app-tabbar aria-label="Primary">
+          <button class="tab-btn" type="button" data-go="spots" data-tab="spots">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a7 7 0 0 0-7 7c0 5.25 7 12 7 12s7-6.75 7-12a7 7 0 0 0-7-7z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
+            <span>Spots</span>
+          </button>
+          <button class="tab-btn" type="button" data-go="home" data-tab="home">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4.5h11a3 3 0 0 1 3 3V19a.5.5 0 0 1-.5.5H8a3 3 0 0 1-3-3V4.5z"/><path d="M5 16.5a3 3 0 0 1 3-3h11"/></svg>
+            <span>Book</span>
+          </button>
+          <button class="tab-btn" type="button" data-go="feed" data-tab="feed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4" width="17" height="6" rx="1.5"/><rect x="3.5" y="14" width="17" height="6" rx="1.5"/></svg>
+            <span>Feed</span>
+          </button>
+          <button class="tab-btn active" type="button" data-go="you" data-tab="you" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.75"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+            <span>You</span>
+          </button>
+        </nav>
       </section>
 
     </div>

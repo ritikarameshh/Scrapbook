@@ -73,6 +73,7 @@ const TEMPLATE = `
   <div class="p2-factsBackdrop"></div>
   <div class="p2-factsModal">
     <div class="p2-factsCard">
+      <button class="p2-factsClose" type="button" aria-label="Close">✕</button>
       <h2 class="p2-factsTitle">Stamp found!</h2>
       <div class="p2-stampViewer">
         <canvas class="p2-stampViewerCanvas" aria-hidden="true"></canvas>
@@ -173,6 +174,7 @@ export async function startPhase2Hunt({
   const featuredFactEl = $('.p2-featuredFact');
   const shareBtn      = $('.p2-shareBtn');
   const dismissBtn    = $('.p2-dismissBtn');
+  const factsCloseBtn = $('.p2-factsClose');
 
   /* ---- Config ---- */
   const STAMP_URL = stampUrl;
@@ -1096,6 +1098,14 @@ export async function startPhase2Hunt({
     fill.position.set(-2, 1, 2); viewerScene.add(fill);
 
     const root = stampRoot.clone(true);
+    // The AR collection animation rotates/scales/repositions stampRoot, so the
+    // clone inherits that pose. Reset to identity so the modal always shows the
+    // stamp at its natural face-on orientation regardless of AR-scene state.
+    root.position.set(0, 0, 0);
+    root.rotation.set(0, 0, 0);
+    root.quaternion.identity();
+    root.scale.set(1, 1, 1);
+    root.updateMatrix();
     root.traverse((obj) => {
       if (!obj.isMesh || !obj.material) return;
       const setSolid = (m) => {
@@ -1260,6 +1270,7 @@ export async function startPhase2Hunt({
   };
   dismissBtn.addEventListener('click', handleDismiss);
   factsBackdrop.addEventListener('click', handleDismiss);
+  factsCloseBtn?.addEventListener('click', handleDismiss);
 
   let touchStartY = null;
   factsModal.addEventListener('touchstart', (e) => {
