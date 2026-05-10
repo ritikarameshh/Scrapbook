@@ -98,7 +98,7 @@ function warnInsecureContext() {
     hint.classList.remove('landmark-hint');
     hint.classList.add('ar-hint-insecure');
     hint.textContent =
-      'Camera needs HTTPS on a phone. Use the https://….trycloudflare.com link from “npm run tunnel” on your computer — not http://192.168… or http://10.….';
+      'Camera needs HTTPS on a phone. Open this app from your deployed URL (e.g. Vercel) or https://localhost — not http://192.168… or http://10.….';
   }
 }
 

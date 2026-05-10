@@ -2,7 +2,7 @@
 
 **Branch:** `arnav/match-outline-flow`  
 **Repo:** https://github.com/ritikarameshh/Scrapbook  
-**Stack:** Vanilla JS + A-Frame 1.4.2 + MindAR (image tracking) + Vite 6  
+**Stack:** Vanilla JS + A-Frame 1.4.2 + MindAR (image tracking); static ES modules (no Vite on `final-app`)  
 
 ---
 
@@ -226,19 +226,15 @@ The current codebase already has both validators' logic side-by-side and they sh
 
 ```bash
 npm install              # installs dependencies (sharp requires --ignore-scripts on Node 24+)
-npm run dev              # Vite dev server at http://localhost:5173
-npm run dev:share        # Vite + Cloudflare tunnel (for HTTPS on phone)
+npm run dev              # static server at http://localhost:5173 (see `serve`)
 npm run gen-outlines     # generate .auto.png edge maps from Assets/*.png/jpeg
 ```
 
-**To compile a new `.mind` file:**
-1. `npm run dev`
-2. Open `http://localhost:5173/compile.html`
-3. Click "Compile targets-hiddengem.mind"
-4. Move downloaded file to `Assets/`
+**To compile a new `.mind` file:**  
+Use the upstream MindAR compile tool in a browser (see MindAR docs), then place the generated `.mind` under `Assets/` as referenced by `ar/ar-config.js`.
 
 **To test on phone:**  
-Camera requires HTTPS. Use `npm run dev:share` (requires cloudflared installed) or the `npm run dev:https` path with the Vite basic-ssl plugin.
+Camera requires HTTPS. Deploy to Vercel (or another HTTPS host) and open that URL, or use a local HTTPS setup; plain `http://192.168…` will not grant camera access on most mobile browsers.
 
 **Debug escape hatch:**  
 Open browser console and run `window.__forceAlign()` to immediately trigger a perfect alignment score and skip to Phase 2.
