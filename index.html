@@ -9,7 +9,7 @@
   <title>Scrapbook</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,SOFT,WONK,wght@9..144,0..100,0..1,400..700&family=Inter:wght@400;500;600&family=Reddit+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,500;1,800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -23,269 +23,173 @@
           <span class="wordmark">Scrapbook</span>
         </div>
         <h1 class="splash-title">Travel you can hold onto.</h1>
-        <p class="splash-sub">An AR companion for cities. Walk a trail, find a stamp, fill the book.</p>
-        <button class="btn btn-primary btn-block" data-go="onboard-faction">Get started</button>
-        <button class="btn btn-ghost btn-block" data-go="home">I have an account</button>
+        <p class="splash-sub">An AR companion for cities. Walk around, find a stamp, fill the book.</p>
+        <button class="btn btn-primary btn-block" data-go="home">Get started</button>
       </section>
 
-      <!-- ============ ONBOARDING — FACTION ============ -->
-      <section class="screen" data-screen="onboard-faction">
-        <header class="topbar">
-          <button class="icon-btn" data-back aria-label="Back">‹</button>
-          <div class="progress">
-            <span class="dot active"></span>
-            <span class="dot"></span>
-            <span class="dot"></span>
-          </div>
-          <span class="topbar-spacer"></span>
-        </header>
-        <main class="screen-body">
-          <h2 class="h-screen">What kind of traveller are you?</h2>
-          <p class="h-sub">Pick up to 2. We'll shape your trails around it.</p>
-          <div class="chip-grid" data-pick-grid data-max="2">
-            <button class="pick-chip" data-val="food">Food‑first</button>
-            <button class="pick-chip" data-val="arch">Architecture</button>
-            <button class="pick-chip" data-val="museum">Museum</button>
-            <button class="pick-chip" data-val="nightlife">Nightlife</button>
-            <button class="pick-chip" data-val="nature">Nature</button>
-            <button class="pick-chip" data-val="history">History</button>
-          </div>
-        </main>
-        <footer class="screen-footer">
-          <button class="btn btn-primary" data-go="onboard-mode">Continue →</button>
-        </footer>
-      </section>
+      <!-- ============ HOME — TRIP STAMPS (Book tab) ============ -->
+      <section class="screen screen-home has-tabs" data-screen="home">
+        <main class="home-stamps">
+          <header class="home-stamps-header">
+            <h1>Your stamps</h1>
+            <button class="home-trip-picker" type="button" aria-label="Select trip">
+              <span>from</span>
+              <strong>New York</strong>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          </header>
 
-      <!-- ============ ONBOARDING — TRENDY vs LOCAL ============ -->
-      <section class="screen" data-screen="onboard-mode">
-        <header class="topbar">
-          <button class="icon-btn" data-back>‹</button>
-          <div class="progress">
-            <span class="dot"></span>
-            <span class="dot active"></span>
-            <span class="dot"></span>
-          </div>
-          <span class="topbar-spacer"></span>
-        </header>
-        <main class="screen-body">
-          <h2 class="h-screen">Trendy or local?</h2>
-          <p class="h-sub">Same city, two different days. You can switch any time.</p>
+          <nav class="home-stamp-tabs" role="tablist" aria-label="Filter stamps" data-stamp-tabs>
+            <button class="home-stamp-tab active" type="button" role="tab" aria-selected="true" data-stamp-filter="all">All</button>
+            <button class="home-stamp-tab" type="button" role="tab" aria-selected="false" data-stamp-filter="landmark">Landmarks</button>
+            <button class="home-stamp-tab" type="button" role="tab" aria-selected="false" data-stamp-filter="gem">Gems</button>
+          </nav>
 
-          <div class="mode-cards" data-mode-pick>
-            <button class="mode-card" data-mode="trendy">
-              <span class="mode-tag trendy">Trendy</span>
-              <strong>Postcard New York</strong>
-              <small>Viewpoints, landmarks, the famous stuff.</small>
-            </button>
-            <button class="mode-card active" data-mode="local">
-              <span class="mode-tag local">Local</span>
-              <strong>Off the postcard</strong>
-              <small>Hidden gems, neighbourhood pubs, off‑street murals.</small>
-            </button>
-          </div>
-        </main>
-        <footer class="screen-footer">
-          <button class="btn btn-primary" data-go="onboard-city">Continue →</button>
-        </footer>
-      </section>
-
-      <!-- ============ ONBOARDING — CITY ============ -->
-      <section class="screen" data-screen="onboard-city">
-        <header class="topbar">
-          <button class="icon-btn" data-back>‹</button>
-          <div class="progress">
-            <span class="dot"></span>
-            <span class="dot"></span>
-            <span class="dot active"></span>
-          </div>
-          <span class="topbar-spacer"></span>
-        </header>
-        <main class="screen-body">
-          <h2 class="h-screen">Where are you?</h2>
-          <p class="h-sub">We use this to suggest a trail nearby.</p>
-          <div class="city-list">
-            <button class="city-row active" data-city="nyc">
-              <span class="city-mark">NYC</span>
-              <div class="grow">
-                <strong>New York City</strong>
-                <small>Detected · 18 trails</small>
-              </div>
-            </button>
-            <button class="city-row" data-city="paris">
-              <span class="city-mark">PAR</span>
-              <div class="grow">
-                <strong>Paris</strong>
-                <small>12 trails</small>
-              </div>
-            </button>
-            <button class="city-row" data-city="tokyo">
-              <span class="city-mark">TYO</span>
-              <div class="grow">
-                <strong>Tokyo</strong>
-                <small>22 trails</small>
-              </div>
-            </button>
-            <button class="city-row" data-city="rome">
-              <span class="city-mark">ROM</span>
-              <div class="grow">
-                <strong>Rome</strong>
-                <small>9 trails</small>
-              </div>
-            </button>
-          </div>
-        </main>
-        <footer class="screen-footer">
-          <button class="btn btn-primary" data-go="home">Find me a trail →</button>
-        </footer>
-      </section>
-
-      <!-- ============ HOME ============ -->
-      <section class="screen has-tabs" data-screen="home">
-        <header class="topbar topbar-home">
-          <div>
-            <small class="topbar-eyebrow">Today in</small>
-            <strong class="topbar-city">New York City</strong>
-          </div>
-          <div class="mode-toggle" data-mode-toggle>
-            <button class="mode-toggle-opt" data-mode="trendy">Trendy</button>
-            <button class="mode-toggle-opt active" data-mode="local">Local</button>
-          </div>
-        </header>
-        <main class="screen-body">
-          <article class="trail-hero">
-            <div class="trail-hero-head">
-              <span class="chip chip-green">Local trail</span>
-              <small>Picked for: nature · history</small>
-            </div>
-            <h2 class="trail-hero-title">Midtown, slowly</h2>
-            <p class="trail-hero-sub">5 stops · ~3.6 mi · 2 hrs at your pace</p>
-            <div class="trail-stops">
-              <div class="stop done">
-                <span class="stop-dot"></span>
-                <div><strong>Bryant Park reading room</strong><small>Collected · 11:24 AM</small></div>
-              </div>
-              <div class="stop active">
-                <span class="stop-dot"></span>
-                <div><strong>Empire State Building</strong><small>You're here · ready to find</small></div>
-              </div>
-              <div class="stop">
-                <span class="stop-dot"></span>
-                <div><strong>Lexington Candy Shop</strong><small>4 blocks east</small></div>
-              </div>
-              <div class="stop">
-                <span class="stop-dot"></span>
-                <div><strong>Kinokuniya bookstore</strong><small>0.4 mi north</small></div>
-              </div>
-              <div class="stop">
-                <span class="stop-dot"></span>
-                <div><strong>230 Fifth rooftop</strong><small>Final stop</small></div>
-              </div>
-            </div>
-            <button class="btn btn-primary btn-block" data-go="ar-search">Find the next stamp</button>
-          </article>
-
-          <section class="section">
-            <h3 class="h-section">Other trails nearby</h3>
-            <div class="trail-mini-list">
-              <article class="trail-mini">
-                <span class="chip chip-orange small">Trendy</span>
-                <strong>NYC, the postcard</strong>
-                <small>5 stops · 4.2 mi</small>
+          <div class="home-stamp-grid" aria-label="New York stamp collection" data-stamp-filter="all">
+            <div class="home-stamp-column">
+              <article class="trip-stamp trip-stamp-tall" data-category="landmark">
+                <img src="Assets/Stamps/EmpireState.png" alt="Empire State Building stamp" />
               </article>
-              <article class="trail-mini">
-                <span class="chip chip-yellow small">Food</span>
-                <strong>Bagel run, west village</strong>
-                <small>4 stops · 1.8 mi</small>
+              <article class="trip-stamp trip-stamp-missing" data-category="landmark">
+                <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
               </article>
-              <article class="trail-mini">
-                <span class="chip chip-blue small">Arch</span>
-                <strong>Brutalism in Midtown</strong>
-                <small>6 stops · 2.4 mi</small>
+              <article class="trip-stamp trip-stamp-square" data-category="gem">
+                <img src="Assets/Stamps/LexingtonCandyShop.png" alt="Lexington Candy Shop stamp" />
+              </article>
+              <article class="trip-stamp trip-stamp-tall-small" data-category="landmark">
+                <img src="Assets/Stamps/WorldTradeCenter.png" alt="World Trade Center stamp" />
+              </article>
+              <article class="trip-stamp trip-stamp-missing" data-category="gem">
+                <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
               </article>
             </div>
-          </section>
-        </main>
-        <nav class="tabbar">
-          <button class="tab-btn" data-go="home">
-            <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-            <small>Map</small>
-          </button>
-          <button class="tab-btn active">
-            <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14"/></svg>
-            <small>Trails</small>
-          </button>
-          <button class="tab-btn" data-go="book">
-            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
-            <small>Book</small>
-          </button>
-          <button class="tab-btn" data-go="you">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4.5-6 7-6s6 2 7 6"/></svg>
-            <small>You</small>
-          </button>
-        </nav>
-      </section>
-
-      <!-- ============ AR — SEARCHING ============ -->
-      <section class="screen screen-camera" data-screen="ar-search" data-needs-camera>
-        <video class="ar-feed" autoplay muted playsinline></video>
-        <div class="ar-scrim"></div>
-        <div class="ar-perm" hidden>
-          <p class="ar-perm-title">Camera needed</p>
-          <p class="ar-perm-sub">Allow camera access to find stamps in the world.</p>
-          <button class="btn btn-pill primary" data-cam-retry>Enable camera</button>
-        </div>
-        <header class="topbar topbar-overlay">
-          <button class="icon-btn light" data-back>✕</button>
-          <span class="ar-label">Empire State Building</span>
-          <span class="topbar-spacer"></span>
-        </header>
-        <div class="ar-stage">
-          <div class="ar-viewfinder">
-            <div class="vf-corner tl"></div>
-            <div class="vf-corner tr"></div>
-            <div class="vf-corner bl"></div>
-            <div class="vf-corner br"></div>
-            <div class="ar-hint">Move your camera around to find the stamp</div>
+            <div class="home-stamp-column">
+              <article class="trip-stamp trip-stamp-square trip-stamp-missing" data-category="landmark" data-book-stamp="met">
+                <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
+              </article>
+              <article class="trip-stamp trip-stamp-tall" data-category="landmark">
+                <img src="Assets/Stamps/TimesSq.png" alt="Times Square stamp" />
+              </article>
+              <article class="trip-stamp trip-stamp-landscape" data-category="landmark">
+                <img src="Assets/Stamps/BryantPark.png" alt="Bryant Park stamp" />
+              </article>
+              <article class="trip-stamp trip-stamp-missing" data-category="landmark">
+                <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
+              </article>
+            </div>
           </div>
-          <div class="radar"><span></span></div>
-        </div>
-        <footer class="ar-footer">
-          <button class="btn btn-pill" data-go="ar-detected">Simulate detection</button>
-        </footer>
+        </main>
       </section>
 
-      <!-- ============ AR — DETECTED, ALIGN ============ -->
-      <section class="screen screen-camera" data-screen="ar-detected" data-needs-camera>
-        <video class="ar-feed" autoplay muted playsinline></video>
-        <div class="ar-scrim soft"></div>
-        <div class="ar-perm" hidden>
-          <p class="ar-perm-title">Camera needed</p>
-          <p class="ar-perm-sub">Allow camera access to find stamps in the world.</p>
-          <button class="btn btn-pill primary" data-cam-retry>Enable camera</button>
-        </div>
-        <header class="topbar topbar-overlay">
-          <button class="icon-btn light" data-back>✕</button>
-          <span class="ar-label detected">Empire State detected</span>
-          <span class="topbar-spacer"></span>
+      <!-- ============ SPOTS — saved hidden gems ============ -->
+      <section class="screen screen-spots has-tabs" data-screen="spots">
+        <div class="spots-scroll">
+        <header class="spots-header">
+          <h1 class="spots-title">Saved spots</h1>
+          <p class="spots-sub">Hidden gems you bookmarked from AR.</p>
         </header>
-        <div class="ar-stage">
-          <div class="ar-viewfinder">
-            <div class="vf-corner tl green"></div>
-            <div class="vf-corner tr green"></div>
-            <div class="vf-corner bl green"></div>
-            <div class="vf-corner br green"></div>
-            <div class="ar-stamp">
-              <div class="stamp-disc">
-                <span class="stamp-name">EMPIRE</span>
-                <span class="stamp-sub">NYC · MAY</span>
+        <main class="screen-body spots-body">
+          <div id="saved-spots-empty" class="saved-spots-empty">
+            <div class="saved-spots-empty-art" aria-hidden="true">
+              <svg viewBox="0 0 64 64">
+                <path d="M22 10h20a4 4 0 0 1 4 4v40l-14-8-14 8V14a4 4 0 0 1 4-4z" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h2>No spots saved yet</h2>
+            <p>When AR shows you a hidden gem, tap "Save for later" to keep it here.</p>
+          </div>
+          <div id="saved-spots-list" class="saved-spots-list" hidden></div>
+        </main>
+        </div>
+      </section>
+
+      <!-- ============ FEED — placeholder ============ -->
+      <section class="screen screen-feed has-tabs" data-screen="feed">
+        <header class="spots-header">
+          <h1 class="spots-title">Feed</h1>
+          <p class="spots-sub">Coming soon.</p>
+        </header>
+        <main class="screen-body feed-body">
+          <div class="feed-placeholder">
+            <div class="saved-spots-empty-art" aria-hidden="true">
+              <svg viewBox="0 0 64 64">
+                <rect x="10" y="14" width="44" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/>
+                <rect x="10" y="36" width="44" height="14" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/>
+              </svg>
+            </div>
+            <h2>Your friends' trips</h2>
+            <p>The feed is on its way. Check back soon.</p>
+          </div>
+        </main>
+      </section>
+
+      <!-- ============ AR SCAN ============ -->
+      <section class="screen screen-ar-scan" data-screen="ar-scan">
+        <!-- MindAR mounts its canvas + video here -->
+        <div id="ar-scan-container"></div>
+
+        <!-- UI overlay (sits above MindAR canvas) -->
+        <div class="ar-ui-overlay">
+          <header class="topbar topbar-overlay">
+            <button class="icon-btn light" data-back aria-label="Close">✕</button>
+            <span class="topbar-spacer"></span>
+            <span class="topbar-spacer"></span>
+          </header>
+
+          <!-- Phases 1 + 4 overlay: 1 = MindAR landmark scan, 4 = Sobel outline match -->
+          <div id="ar-phase-outline" class="ar-phase">
+            <div id="ar-camera-error" class="ar-camera-error" hidden>
+              <p class="ar-camera-error-title">Camera did not start</p>
+              <p class="ar-camera-error-sub">Use Safari or Chrome over HTTPS (or localhost). Tap to try again.</p>
+              <button type="button" class="btn btn-pill primary" data-ar-cam-retry>Enable camera</button>
+            </div>
+            <div class="outline-stage" data-state="idle">
+              <div class="outline-target" id="outline-target">
+                <div class="outline-img" id="outline-img" role="img" aria-label="Outline of the hidden gem"></div>
+                <svg class="sustain-ring" viewBox="0 0 100 100" aria-hidden="true">
+                  <circle class="sustain-ring-track" cx="50" cy="50" r="46"></circle>
+                  <circle class="sustain-ring-fill"  cx="50" cy="50" r="46"></circle>
+                </svg>
+                <div class="lockin-check" aria-hidden="true">✓</div>
               </div>
             </div>
-            <div class="ar-hint align">Align the outline with the building to unlock</div>
+            <p class="ar-hint outline-hint outline-hint--phase4" id="outline-hint">Find this outline around you and match it to unlock your stamp!</p>
+          </div>
+
+          <!-- Phase 2: stamp hunt — DOM is mounted by phase2-hunt.js inside the host. -->
+          <div id="ar-phase-2" class="ar-phase" hidden>
+            <div id="ar-phase-2-host"></div>
+          </div>
+
+          <!-- Phase 3: hidden-gem suggestions -->
+          <div id="ar-phase-3" class="ar-phase ar-phase-3" hidden>
+            <header class="ar-phase-3-heading">
+              <h2>You are near some interesting spots</h2>
+              <p class="ar-phase-3-helper">Tap on any pin to find your next clue</p>
+            </header>
+
+            <div id="gem-detail-card" class="gem-detail-card" hidden>
+              <button type="button" class="gem-detail-close" data-gem-close aria-label="Close detail card">✕</button>
+              <p class="gem-detail-type" data-gem-type></p>
+              <h3 class="gem-detail-title" data-gem-title></h3>
+              <p class="gem-detail-meta"><span data-gem-walk></span></p>
+              <div class="gem-detail-actions">
+                <button type="button" class="btn btn-ghost gem-detail-save" data-gem-save aria-pressed="false">
+                  <svg class="gem-detail-save-icon" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M6 4h12a1 1 0 0 1 1 1v16l-7-4-7 4V5a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+                  </svg>
+                  <span class="gem-detail-save-label">Save for later</span>
+                </button>
+                <button type="button" class="btn btn-primary" data-gem-go>Go →</button>
+              </div>
+            </div>
+
+            <div id="gem-toast" class="gem-toast" hidden></div>
           </div>
         </div>
-        <footer class="ar-footer">
-          <button class="btn btn-pill primary" data-go="ar-fact">+ Collect stamp</button>
-        </footer>
+
       </section>
 
       <!-- ============ STAMP — FACT + TASK ============ -->
@@ -332,66 +236,17 @@
               <span class="stamp-sub">NYC · MAY</span>
             </div>
           </div>
-          <h2 class="collected-title">Stamp added</h2>
-          <p class="collected-sub">Midtown, slowly · stop 2 of 5</p>
+          <h2 class="collected-title">Stamp collected!</h2>
+          <p class="collected-sub">Added to your New York City book</p>
         </main>
         <footer class="screen-footer split">
-          <button class="btn btn-ghost" data-go="book">See the book</button>
-          <button class="btn btn-primary" data-go="nearby">What's around →</button>
-        </footer>
-      </section>
-
-      <!-- ============ NEARBY ============ -->
-      <section class="screen" data-screen="nearby">
-        <header class="topbar">
-          <button class="icon-btn" data-back>‹</button>
-          <span class="topbar-title">Around Empire State</span>
-          <span class="topbar-spacer"></span>
-        </header>
-        <main class="screen-body">
-          <p class="h-sub no-top">Quiet picks within a 12‑min walk. Add any to your trail.</p>
-          <ul class="nearby-list">
-            <li>
-              <span class="nearby-dot dot-green"></span>
-              <div class="nearby-meta">
-                <strong>Kinokuniya</strong>
-                <small>Japanese bookstore · 6 min walk</small>
-              </div>
-              <button class="add-btn">+</button>
-            </li>
-            <li>
-              <span class="nearby-dot dot-orange"></span>
-              <div class="nearby-meta">
-                <strong>230 Fifth rooftop</strong>
-                <small>City view · 9 min walk</small>
-              </div>
-              <button class="add-btn">+</button>
-            </li>
-            <li>
-              <span class="nearby-dot dot-yellow"></span>
-              <div class="nearby-meta">
-                <strong>Lexington Candy Shop</strong>
-                <small>Old soda fountain · 11 min walk</small>
-              </div>
-              <button class="add-btn added">✓</button>
-            </li>
-            <li>
-              <span class="nearby-dot dot-blue"></span>
-              <div class="nearby-meta">
-                <strong>Morgan Library reading room</strong>
-                <small>Quiet · 12 min walk</small>
-              </div>
-              <button class="add-btn">+</button>
-            </li>
-          </ul>
-        </main>
-        <footer class="screen-footer">
-          <button class="btn btn-primary btn-block" data-go="home">Back to trail</button>
+          <button class="btn btn-ghost" data-go="home">Keep exploring</button>
+          <button class="btn btn-primary" data-go="home">See the book →</button>
         </footer>
       </section>
 
       <!-- ============ BOOK ============ -->
-      <section class="screen has-tabs" data-screen="book">
+      <section class="screen" data-screen="book">
         <header class="topbar topbar-book">
           <div>
             <small class="topbar-eyebrow">Trip</small>
@@ -575,24 +430,6 @@
             </button>
           </div>
         </main>
-        <nav class="tabbar">
-          <button class="tab-btn" data-go="home">
-            <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-            <small>Map</small>
-          </button>
-          <button class="tab-btn" data-go="home">
-            <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14"/></svg>
-            <small>Trails</small>
-          </button>
-          <button class="tab-btn active">
-            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
-            <small>Book</small>
-          </button>
-          <button class="tab-btn" data-go="you">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4.5-6 7-6s6 2 7 6"/></svg>
-            <small>You</small>
-          </button>
-        </nav>
       </section>
 
       <!-- ============ YOU ============ -->
@@ -626,29 +463,62 @@
             <span class="friend-av av-3">+</span>
           </div>
         </main>
-        <nav class="tabbar">
-          <button class="tab-btn" data-go="home">
-            <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-            <small>Map</small>
+      </section>
+
+      <!-- Shared bottom dock: stamp alert + tab bar (all main tabs) — Figma 81:445 -->
+      <div id="app-tab-dock" class="app-tab-dock" hidden>
+        <div id="stamp-alert" class="stamp-alert" aria-label="Nearby stamp">
+          <div class="stamp-alert-card">
+            <div class="near-stamp-row">
+              <div class="near-stamp-thumb-wrap">
+                <img class="near-stamp-thumb" src="Assets/Stamps/MissingStamp.png" alt="" />
+              </div>
+              <div class="near-stamp-copy">
+                <p class="near-stamp-title">You are near a stamp</p>
+                <p class="near-stamp-sub">At the Metropolitan Museum of Art</p>
+              </div>
+              <button class="near-stamp-cta" type="button" data-go="ar-scan">Find it</button>
+            </div>
+          </div>
+          <div class="stamp-alert-divider" aria-hidden="true"></div>
+        </div>
+        <nav class="tabbar" data-app-tabbar aria-label="Primary">
+          <button class="tab-btn" type="button" data-go="spots" data-tab="spots">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3H7a2 2 0 0 0-2 2v16l8-3.45 8 3.45V5a2 2 0 0 0-2-2z"/></svg>
+            <span>Spots</span>
           </button>
-          <button class="tab-btn" data-go="home">
-            <svg viewBox="0 0 24 24"><path d="M5 6h14M5 12h14M5 18h14"/></svg>
-            <small>Trails</small>
+          <button class="tab-btn active" type="button" data-go="home" data-tab="home" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6.25A3.25 3.25 0 0 1 7.25 3H11v18H7.25A3.25 3.25 0 0 1 4 17.75V6.25ZM12 3h3.75A3.25 3.25 0 0 1 19 6.25v11.5A3.25 3.25 0 0 1 15.75 21H12V3Z"/></svg>
+            <span>Book</span>
           </button>
-          <button class="tab-btn" data-go="book">
-            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
-            <small>Book</small>
+          <button class="tab-btn" type="button" data-go="feed" data-tab="feed">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 5.25h6.25v6.25H5V5.25Zm8.75 0H20v6.25h-6.25V5.25ZM5 14h6.25v6.25H5V14Zm8.75 0H20v6.25h-6.25V14Z"/></svg>
+            <span>Feed</span>
           </button>
-          <button class="tab-btn active">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4.5-6 7-6s6 2 7 6"/></svg>
-            <small>You</small>
+          <button class="tab-btn" type="button" data-go="you" data-tab="you">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12.25a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM3.75 20.5c0-3.86 3.1-7 8.25-7s8.25 3.14 8.25 7v1H3.75v-1Z"/></svg>
+            <span>You</span>
           </button>
         </nav>
-      </section>
+      </div>
 
     </div>
   </div>
 
-  <script src="script.js"></script>
+  <!-- A-Frame core: required before MindAR (mindar-image-aframe only registers on global AFRAME) -->
+  <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  <!-- MindAR image + A-Frame integration -->
+  <script src="mindar-image-aframe.prod.js"></script>
+  <!-- Phase 2 stamp-hunt deps: MediaPipe Hands (global) + Three.js importmap -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" crossorigin="anonymous"></script>
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>

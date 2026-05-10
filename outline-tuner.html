@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Outline Tuner</title>
+<style>
+  :root{
+    --bg:#0e0f13; --panel:#171922; --ink:#f3f4f8; --muted:#a3a8b8;
+    --line:#262936; --a:#7cf4d1; --b:#ffb86b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 20% -10%,#1d2030,#0e0f13);color:var(--ink);font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Inter,sans-serif;line-height:1.5}
+  .wrap{max-width:1200px;margin:0 auto;padding:32px 24px 64px}
+  h1{font-size:28px;margin:0 0 4px;letter-spacing:-0.01em}
+  .sub{color:var(--muted);margin-bottom:24px;font-size:14px}
+  .layout{display:grid;grid-template-columns:320px 1fr;gap:22px}
+  @media (max-width:880px){.layout{grid-template-columns:1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px}
+  .panel h2{margin:0 0 14px;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .drop{border:2px dashed var(--line);border-radius:10px;padding:18px;text-align:center;color:var(--muted);font-size:13px;cursor:pointer;transition:border-color .15s,background .15s}
+  .drop:hover,.drop.drag{border-color:var(--a);background:rgba(124,244,209,.04);color:var(--ink)}
+  .row{margin:14px 0}
+  .row label{display:flex;justify-content:space-between;font-size:13px;color:var(--ink);margin-bottom:6px}
+  .row label .v{color:var(--a);font-variant-numeric:tabular-nums;font-weight:600}
+  input[type=range]{width:100%;accent-color:var(--a)}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.4}
+  .actions{display:flex;gap:10px;margin-top:18px}
+  button{flex:1;background:var(--a);color:#0e0f13;border:0;border-radius:8px;padding:11px 14px;font-weight:600;font-size:14px;cursor:pointer}
+  button.secondary{background:transparent;color:var(--ink);border:1px solid var(--line)}
+  button:hover{filter:brightness(1.1)}
+  .stage{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media (max-width:680px){.stage{grid-template-columns:1fr}}
+  .view{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column}
+  .view h3{margin:0 0 10px;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+  .canvas-host{background:repeating-conic-gradient(#1b1e2a 0 25%,#171922 0 50%) 50%/16px 16px;border-radius:8px;display:flex;align-items:center;justify-content:center;min-height:360px;overflow:hidden;padding:8px}
+  canvas{max-width:100%;max-height:520px;display:block}
+  .stats{margin-top:10px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .stats b{color:var(--a)}
+  .empty{color:var(--muted);font-size:13px;padding:60px 20px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Outline Tuner</h1>
+  <div class="sub">Tweak edge-detection settings live, then download the <code>.auto.png</code>. Same pipeline as <code>scripts/generate-outline.mjs</code>, just in your browser.</div>
+
+  <div class="layout">
+    <!-- Controls -->
+    <div class="panel">
+      <h2>1 · Source image</h2>
+      <label class="drop" id="drop">
+        <input type="file" id="file" accept="image/*" hidden>
+        <div id="drop-text">Click or drop an image<br><span style="font-size:11px">(e.g. HiddenGem.png)</span></div>
+      </label>
+
+      <h2 style="margin-top:22px">2 · Settings</h2>
+
+      <div class="row">
+        <label>Output width <span class="v" id="v-width">480</span> px</label>
+        <input type="range" id="r-width" min="240" max="960" step="40" value="480">
+        <div class="hint">Bigger = more detail but slower. 480 matches the script default.</div>
+      </div>
+
+      <div class="row">
+        <label>Pre-blur <span class="v" id="v-blur">1.0</span></label>
+        <input type="range" id="r-blur" min="0" max="3" step="0.1" value="1">
+        <div class="hint">Smooths the photo before edges. More blur = fewer tiny noise edges.</div>
+      </div>
+
+      <div class="row">
+        <label>Edge threshold <span class="v" id="v-thresh">60</span></label>
+        <input type="range" id="r-thresh" min="10" max="220" step="2" value="60">
+        <div class="hint">Higher = only the strongest edges survive (cleaner). Lower = more detail.</div>
+      </div>
+
+      <div class="row">
+        <label>Despeckle (min blob) <span class="v" id="v-blob">0</span> px</label>
+        <input type="range" id="r-blob" min="0" max="200" step="2" value="0">
+        <div class="hint">Drops disconnected fragments smaller than this. 0 = off.</div>
+      </div>
+
+      <div class="row">
+        <label>Stroke thickness <span class="v" id="v-dilate">1</span> px</label>
+        <input type="range" id="r-dilate" min="0" max="6" step="1" value="1">
+        <div class="hint">How much to thicken every line. Helps the camera hit the outline.</div>
+      </div>
+
+      <div class="row">
+        <label>Invert</label>
+        <input type="checkbox" id="r-invert">
+        <div class="hint">If your subject is darker than the background and edges look hollow, try this.</div>
+      </div>
+
+      <div class="actions">
+        <button id="download">Download .auto.png</button>
+        <button class="secondary" id="reset">Reset</button>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="stage">
+      <div class="view">
+        <h3>Source</h3>
+        <div class="canvas-host"><canvas id="src-canvas"></canvas><div id="src-empty" class="empty">Drop an image to begin</div></div>
+      </div>
+      <div class="view">
+        <h3>Outline preview</h3>
+        <div class="canvas-host"><canvas id="out-canvas"></canvas><div id="out-empty" class="empty">—</div></div>
+        <div class="stats" id="stats"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const srcCanvas = $('src-canvas'), outCanvas = $('out-canvas');
+const srcEmpty = $('src-empty'), outEmpty = $('out-empty');
+let sourceImg = null;
+let sourceName = 'outline';
+
+// --- File handling ---
+const fileInput = $('file');
+const drop = $('drop');
+drop.addEventListener('click', () => fileInput.click());
+drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('drag'); });
+drop.addEventListener('dragleave', () => drop.classList.remove('drag'));
+drop.addEventListener('drop', e => {
+  e.preventDefault();
+  drop.classList.remove('drag');
+  const f = e.dataTransfer.files?.[0];
+  if (f) loadFile(f);
+});
+fileInput.addEventListener('change', e => {
+  const f = e.target.files?.[0];
+  if (f) loadFile(f);
+});
+
+function loadFile(file) {
+  sourceName = file.name.replace(/\.[^.]+$/, '');
+  $('drop-text').innerHTML = `<b style="color:var(--a)">${file.name}</b><br><span style="font-size:11px">click to change</span>`;
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  img.onload = () => {
+    sourceImg = img;
+    srcEmpty.style.display = 'none';
+    outEmpty.style.display = 'none';
+    drawSource();
+    process();
+    URL.revokeObjectURL(url);
+  };
+  img.src = url;
+}
+
+function drawSource() {
+  if (!sourceImg) return;
+  const w = +$('r-width').value;
+  const h = Math.round(w * sourceImg.naturalHeight / sourceImg.naturalWidth);
+  srcCanvas.width = w; srcCanvas.height = h;
+  srcCanvas.getContext('2d').drawImage(sourceImg, 0, 0, w, h);
+}
+
+// --- Pipeline ---
+function process() {
+  if (!sourceImg) return;
+  const w = +$('r-width').value;
+  const h = Math.round(w * sourceImg.naturalHeight / sourceImg.naturalWidth);
+  const blur = +$('r-blur').value;
+  const threshold = +$('r-thresh').value;
+  const minBlob = +$('r-blob').value;
+  const dilateIters = +$('r-dilate').value;
+  const invert = $('r-invert').checked;
+
+  // 1. draw source small + grayscale + blur using a tmp canvas
+  const tmp = document.createElement('canvas');
+  tmp.width = w; tmp.height = h;
+  const tctx = tmp.getContext('2d');
+  if (blur > 0) tctx.filter = `blur(${blur}px) grayscale(1)`;
+  else tctx.filter = 'grayscale(1)';
+  tctx.drawImage(sourceImg, 0, 0, w, h);
+  tctx.filter = 'none';
+  const id = tctx.getImageData(0, 0, w, h);
+  const gray = new Uint8Array(w * h);
+  for (let i = 0, j = 0; i < id.data.length; i += 4, j++) gray[j] = id.data[i];
+
+  // 2. Sobel
+  const mag = new Uint16Array(w * h);
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const tl = gray[i-w-1], t = gray[i-w], tr = gray[i-w+1];
+      const l  = gray[i-1],                  r  = gray[i+1];
+      const bl = gray[i+w-1], b = gray[i+w], br = gray[i+w+1];
+      const gx = -tl - 2*l - bl + tr + 2*r + br;
+      const gy = -tl - 2*t - tr + bl + 2*b + br;
+      mag[i] = Math.min(65535, Math.hypot(gx, gy));
+    }
+  }
+
+  // 3. threshold
+  let mask = new Uint8Array(w * h);
+  let onCount = 0;
+  for (let i = 0; i < mag.length; i++) {
+    if (mag[i] > threshold) { mask[i] = 1; onCount++; }
+  }
+  const rawCoverage = onCount / mask.length;
+
+  // 4. despeckle
+  let dropped = 0;
+  if (minBlob > 0) {
+    const visited = new Uint8Array(mask.length);
+    const stack = new Int32Array(mask.length);
+    const cleaned = new Uint8Array(mask.length);
+    for (let i = 0; i < mask.length; i++) {
+      if (!mask[i] || visited[i]) continue;
+      let sp = 0;
+      stack[sp++] = i; visited[i] = 1;
+      const comp = [];
+      while (sp > 0) {
+        const j = stack[--sp];
+        comp.push(j);
+        const x = j % w, y = (j - x) / w;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if (!dx && !dy) continue;
+          const nx = x + dx, ny = y + dy;
+          if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+          const nj = ny * w + nx;
+          if (mask[nj] && !visited[nj]) { visited[nj] = 1; stack[sp++] = nj; }
+        }
+      }
+      if (comp.length >= minBlob) for (const j of comp) cleaned[j] = 1;
+      else dropped += comp.length;
+    }
+    mask = cleaned;
+  }
+
+  // 5. dilate
+  for (let it = 0; it < dilateIters; it++) {
+    const next = new Uint8Array(mask.length);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      const i = y * w + x;
+      if (mask[i]) { next[i] = 1; continue; }
+      if ((x > 0 && mask[i-1]) || (x < w-1 && mask[i+1]) ||
+          (y > 0 && mask[i-w]) || (y < h-1 && mask[i+w])) next[i] = 1;
+    }
+    mask = next;
+  }
+
+  // 6. compose RGBA — black on transparent (or inverted)
+  outCanvas.width = w; outCanvas.height = h;
+  const octx = outCanvas.getContext('2d');
+  const out = octx.createImageData(w, h);
+  let finalOn = 0;
+  for (let i = 0; i < mask.length; i++) {
+    const on = invert ? !mask[i] : !!mask[i];
+    if (on) { out.data[i*4+3] = 255; finalOn++; }
+  }
+  octx.putImageData(out, 0, 0);
+
+  $('stats').innerHTML =
+    `coverage <b>${(finalOn/mask.length*100).toFixed(1)}%</b> · ` +
+    `raw <b>${(rawCoverage*100).toFixed(1)}%</b> · ` +
+    `dropped <b>${dropped}</b> px · ` +
+    `${w}×${h}`;
+}
+
+// --- Slider wiring ---
+const sliders = ['width','blur','thresh','blob','dilate'];
+sliders.forEach(k => {
+  $('r-'+k).addEventListener('input', () => {
+    const v = $('r-'+k).value;
+    const fmt = k === 'blur' ? Number(v).toFixed(1) : v;
+    $('v-'+k).textContent = fmt;
+    if (k === 'width') drawSource();
+    process();
+  });
+});
+$('r-invert').addEventListener('change', process);
+
+$('reset').addEventListener('click', () => {
+  $('r-width').value = 480; $('v-width').textContent = '480';
+  $('r-blur').value = 1;    $('v-blur').textContent = '1.0';
+  $('r-thresh').value = 60; $('v-thresh').textContent = '60';
+  $('r-blob').value = 0;    $('v-blob').textContent = '0';
+  $('r-dilate').value = 1;  $('v-dilate').textContent = '1';
+  $('r-invert').checked = false;
+  drawSource(); process();
+});
+
+$('download').addEventListener('click', () => {
+  if (!sourceImg) return;
+  outCanvas.toBlob(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${sourceName}.auto.png`;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  }, 'image/png');
+});
+</script>
+</body>
+</html>

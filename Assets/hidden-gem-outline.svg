@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Placeholder hidden-gem outline. Stylised tall building silhouette.
+  Replace with the actual landmark silhouette once you decide on the spot.
+  When used in the camera overlay, only the alpha is read (any color works).
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" fill="#000">
+  <!-- spire -->
+  <rect x="148"  y="20"  width="4"   height="60"/>
+  <rect x="142"  y="80"  width="16"  height="14"/>
+  <!-- antenna base -->
+  <polygon points="130,94 170,94 178,114 122,114"/>
+  <!-- upper setbacks -->
+  <rect x="118"  y="114" width="64"  height="36"/>
+  <rect x="108"  y="150" width="84"  height="24"/>
+  <rect x="100"  y="174" width="100" height="20"/>
+  <!-- main shaft -->
+  <rect x="92"   y="194" width="116" height="120"/>
+  <!-- vertical mullion lines, painted as thin gaps -->
+  <rect x="106"  y="194" width="2"   height="120" fill="#ffffff"/>
+  <rect x="124"  y="194" width="2"   height="120" fill="#ffffff"/>
+  <rect x="142"  y="194" width="2"   height="120" fill="#ffffff"/>
+  <rect x="160"  y="194" width="2"   height="120" fill="#ffffff"/>
+  <rect x="178"  y="194" width="2"   height="120" fill="#ffffff"/>
+  <rect x="194"  y="194" width="2"   height="120" fill="#ffffff"/>
+  <!-- broader base -->
+  <rect x="78"   y="314" width="144" height="44"/>
+  <rect x="64"   y="358" width="172" height="28"/>
+</svg>

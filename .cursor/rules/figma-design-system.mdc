@@ -1,0 +1,263 @@
+---
+description: Design system rules for translating Figma designs into the Scrapbook app. Defines color/typography tokens, component conventions, asset handling, and the required Figma MCP-to-code workflow.
+globs:
+  - "styles.css"
+  - "index.html"
+  - "phase2-hunt.js"
+  - "ar/**/*.js"
+  - "Assets/**"
+alwaysApply: true
+---
+
+# Scrapbook Design System Rules
+
+This project is a vanilla HTML/CSS/JS mobile-AR web app (Vite-built, no frameworks).
+There is no React, no Vue, no Tailwind, no CSS-in-JS, no component library. All UI is
+authored as HTML sections inside `index.html` and styled via the single global stylesheet
+`styles.css`. Treat any Figma MCP output (which is React + Tailwind by default) as a
+**reference for layout, color, and typography only** — translate it into this project's
+HTML + CSS conventions and reuse the tokens defined below.
+
+---
+
+## 1. Tech Stack & Project Layout
+
+- **Languages**: HTML, CSS, JavaScript (CommonJS modules + ES modules in vendored libs)
+- **Build / dev server**: Vite (`npm run dev`, `npm run dev:https`)
+- **3D / AR**: `three`, `mind-ar`, plus a vendored MindAR-A-Frame bundle
+- **No bundled UI framework** — DOM is built directly from string templates and rendered into screen sections
+- **Source roots**:
+  - `index.html` — single-page app shell, declares every screen as `<section class="screen" data-screen="…">`
+  - `styles.css` — the **only** global stylesheet for the main app
+  - `script.js` — top-level navigation / screen-switching glue
+  - `phase2-hunt.js` — Phase-2 stamp-hunt UI (its DOM is injected as a string template at the top of the file)
+  - `ar/*.js` — AR orchestrator and phase modules (each may inject overlay DOM and update screen state)
+  - `Assets/` — static images, GLTF models, SVGs, paper textures
+  - `met-detection/` — **standalone prototype**, do not modify when implementing main-app designs
+
+> When implementing a Figma design, edit the existing screen section in `index.html` (or
+> the relevant template-string in `phase2-hunt.js`/`ar/*.js`) and add styles to
+> `styles.css`. **Do not create a new component file or a new stylesheet.**
+
+---
+
+## 2. Design Tokens (CSS Custom Properties)
+
+All design tokens live in the `:root` block at the top of `styles.css`. **Never hardcode
+hex values in selectors below `:root`** — always reference a token. If you need a shade
+that isn't defined, add it to `:root` first.
+
+### 2.1 Color — Primary (rusty red, #922B00)
+
+```css
+--primary-50:  #FBEBE5;   /* surface tint behind primary content */
+--primary-100: #F5D2C2;   /* light tint, badges, hover backgrounds */
+--primary-200: #E8A488;
+--primary-300: #D67451;
+--primary-400: #B5471F;
+--primary-500: #922B00;   /* base brand — buttons, links, key accents */
+--primary-600: #7A2400;   /* hover / pressed */
+--primary-700: #621D00;   /* text on light, dark accent */
+--primary-800: #471500;
+--primary-900: #2C0D00;
+```
+
+### 2.2 Color — Neutral (charcoal, #2C2C2C)
+
+```css
+--neutral-0:   #FFFFFF;   /* page surface */
+--neutral-50:  #F7F7F7;
+--neutral-100: #EBEBEB;   /* hairlines, soft backgrounds */
+--neutral-200: #D6D6D6;   /* borders */
+--neutral-300: #B8B8B8;
+--neutral-400: #909090;   /* muted body / captions */
+--neutral-500: #6D6D6D;
+--neutral-600: #4F4F4F;   /* secondary body */
+--neutral-700: #3A3A3A;
+--neutral-800: #2C2C2C;   /* base text */
+--neutral-900: #161616;
+```
+
+### 2.3 Semantic aliases (do not break these — many existing selectors depend on them)
+
+```css
+--brand:     var(--primary-500);
+--brand-2:   var(--primary-700);  /* pressed / dark accent */
+--brand-3:   var(--primary-100);  /* light brand wash */
+--ink:       var(--neutral-800);
+--ink-soft:  var(--neutral-600);
+--ink-mute:  var(--neutral-400);
+--surface:   var(--neutral-0);
+--line:      var(--neutral-200);
+--line-soft: var(--neutral-100);
+```
+
+### 2.4 Color — Functional / playful palette (do NOT replace with primary)
+
+These power AR-state feedback and decorative chips. Keep them intact:
+
+```css
+--coral, --coral-2, --mustard, --mustard-2, --sage, --sage-2,
+--terra, --terra-2, --sky, --sky-2
+```
+
+> Outline phase states (`far → coral`, `near → mustard`, `aligned/locked → sage`),
+> the hand-tracking pill, and confetti all map to these. Do not unify them with the
+> primary ramp.
+
+### 2.5 Typography tokens
+
+```css
+--font-display: "Fraunces", Georgia, "Times New Roman", serif;
+--font-sans:    "Reddit Sans", "Inter", -apple-system, BlinkMacSystemFont,
+                "Segoe UI", system-ui, sans-serif;
+--font-body:    var(--font-sans);  /* alias for clarity */
+```
+
+- **Headings** (`h1`–`h3`, splash titles, modal titles, screen titles): always
+  `font-family: var(--font-display)` and prefer `font-variation-settings: 'SOFT' 0, 'WONK' 1`
+  for the playful italic hook used on the home page and facts modal.
+- **Body, UI labels, buttons, captions**: `font-family: var(--font-sans)` (Reddit Sans).
+  Never re-declare `"Reddit Sans"` inside individual selectors — `--font-sans` already
+  resolves to it. If the design calls for italic body, use `font-style: italic` plus
+  the existing token, not a new family.
+
+### 2.6 Other tokens
+
+```css
+--radius-sm: 10px;  --radius: 14px;  --radius-lg: 20px;
+--shadow-sm: 0 1px 2px rgba(60,40,20,0.05), 0 4px 12px rgba(60,40,20,0.06);
+--shadow:    0 2px 4px rgba(60,40,20,0.05), 0 16px 36px rgba(60,40,20,0.10);
+--tabbar-h: 60px;  --topbar-h: 52px;
+```
+
+Use these radii / shadows in preference to inventing new ones.
+
+---
+
+## 3. Styling Approach
+
+- **Single global stylesheet (`styles.css`)** organized by section banners
+  (`/* ============ Section ============ */`). Add new selectors under the most
+  appropriate banner; create a new banner only if the surface is genuinely new.
+- **No CSS Modules, no styled-components, no Tailwind, no SCSS.** Plain CSS with
+  custom properties.
+- **Selectors are class-based and BEM-ish** (`.p2-loadingScreen`, `.home-stamp-grid`,
+  `.trip-stamp.trip-stamp-tall`). Prefix phase-2 styles with `p2-`. AR-overlay styles
+  live inside `#ar-phase-2-host` / `#ar-phase-outline` scopes.
+- **No inline styles** for anything visual. Inline styles are reserved for runtime
+  positioning calculated in JS (e.g. `arrowHint.style.left/top/transform`).
+- **Mobile-first.** The app surface is capped at `max-width: 450px` (see `.app`).
+  Use `@media (max-height: 700px)` style queries, not breakpoints based on width,
+  for layout adjustments.
+- **Safe areas.** Respect `env(safe-area-inset-top|bottom)` everywhere a fixed element
+  meets the viewport edge. Phase 2 exposes `--p2-safe-top` / `--p2-safe-bottom`.
+- **Accessibility.** Decorative SVGs/imgs use `aria-hidden="true"` and empty `alt=""`.
+  Interactive `<button>`s always have either visible text or `aria-label`.
+
+---
+
+## 4. Component / DOM Conventions
+
+- **Screens** are `<section class="screen" data-screen="<id>">` blocks inside
+  `#app`. `script.js` toggles the `.active` class to switch screens and listens for
+  `data-go="<id>"` clicks for navigation. Honor this contract:
+
+  ```html
+  <button class="btn btn-primary" data-go="ar-scan">Find it</button>
+  ```
+
+- **Buttons** use the `.btn` base class plus a variant: `.btn-primary` (filled brand),
+  `.btn-ghost` (white/bordered), `.btn-pill` (rounded), `.btn-block` (full-width).
+  Primary CTAs are **always bold** (`font-weight: 700`) — `.btn-primary` sets this
+  on the base class; new screen-specific primary CTAs (e.g. `.near-stamp-cta`,
+  `.p2-dismissBtnTitle`) must also use `font-weight: 700`+.
+- **Topbars** use `.topbar` + variant (`.topbar-overlay`, `.topbar-location`,
+  `.topbar-book`). Three-column grid: `[icon-btn] [title] [icon-btn]`. Use
+  `<span class="topbar-spacer"></span>` for empty cells.
+- **Icon buttons**: `.icon-btn` (square 36×36, 10px radius). Variants `.light` for
+  on-camera overlays, `.ghost` for muted secondary.
+- **Chips**: `.chip` + color variant (`.chip-blue`, `.chip-green`, `.chip-orange`,
+  `.chip-yellow`).
+
+---
+
+## 5. Asset Management
+
+- **Static assets** live in `Assets/` at the project root (note capital A).
+  Subfolders: `Assets/Stamps/` for stamp PNGs, `Assets/MetStamp.gltf` and friends
+  for 3D models, `Assets/paper-bg.png` for the home page texture, `Assets/arrow.svg`
+  for the phase-2 directional arrow.
+- **Reference assets with relative paths** from `index.html` (e.g. `Assets/foo.png`)
+  or with `./Assets/foo.png` when the reference originates from a JS template string
+  rendered into the same root.
+- **Image-only stamps** belong in `Assets/Stamps/` named in PascalCase
+  (`EmpireState.png`, `TheMet.png`, `MissingStamp.png`).
+- **Inline SVG vs. `<img src=…>`**: use inline SVG when you need to manipulate
+  fills/strokes from CSS or animate path attributes; otherwise prefer
+  `<img src="Assets/icon.svg" alt="" aria-hidden="true">`.
+- **No icon fonts, no icon packages.** Add new icons as SVG files under `Assets/`.
+
+---
+
+## 6. Figma MCP Integration Workflow
+
+Required flow for every Figma-driven change — **do not skip steps**:
+
+1. **Fetch context.** Call `get_design_context` for the exact `nodeId`. If the
+   response is too large, call `get_metadata` first to identify the right node, then
+   re-fetch with `get_design_context`.
+2. **Fetch screenshot.** Call `get_screenshot` for the same node. Both are required
+   before writing code.
+3. **Translate, do not transcribe.** The MCP returns React + Tailwind. Convert it to:
+   - HTML inserted into the matching `<section data-screen="…">` in `index.html`,
+     **or** appended to the relevant JS template string in `phase2-hunt.js` / `ar/*.js`.
+   - CSS rules in `styles.css` using the tokens in §2. Replace every Tailwind class
+     with a semantic class on the element and a corresponding CSS rule.
+4. **Map colors → tokens.** Look up the Figma hex in §2.1/§2.2. Pick the closest
+   ramp step. If the hex is genuinely new (not a tint of primary/neutral and not
+   already in the playful palette), add a new token to `:root` rather than hardcoding.
+5. **Map type → tokens.** Headings → `var(--font-display)`. Body / labels →
+   `var(--font-sans)`. Italic decorative emphasis → add `font-style: italic`.
+   Use the existing variation settings hook (`'SOFT' 0, 'WONK' 1`) for Fraunces.
+6. **Reuse, don't duplicate.** Before adding a new button/chip/topbar style, check
+   if an existing class (`.btn`, `.chip`, `.icon-btn`, `.topbar-*`, etc.) already
+   covers it.
+7. **Wire interactions.** New navigation goes through `data-go="<screen-id>"` so
+   `script.js` handles the transition. New phase-2 modal logic lives in
+   `phase2-hunt.js` and uses `.p2-` classes consistently.
+8. **Validate.** Compare the rendered local page against the Figma screenshot for
+   1:1 parity in spacing, color, type, and behavior before declaring done.
+
+### Important rules
+
+- **IMPORTANT**: Never hardcode `#922B00`, `#2C2C2C`, or any of their tints — use
+  the `--primary-*` / `--neutral-*` tokens.
+- **IMPORTANT**: Never re-declare `font-family: "Reddit Sans", …` inside a selector.
+  Use `var(--font-sans)`. The token already includes Reddit Sans as the first family.
+- **IMPORTANT**: Never restyle the `--coral / --mustard / --sage / --terra / --sky`
+  semantic colors — they encode AR feedback states.
+- **IMPORTANT**: Use the existing `.btn` system rather than authoring bespoke
+  button selectors per screen. New variants belong under the `/* ============ Buttons ============ */` banner.
+- **IMPORTANT**: When the Figma MCP server returns a localhost source for an asset,
+  use that source directly. Do **not** install icon packages or generate placeholders.
+
+---
+
+## 7. Project-Specific Conventions
+
+- **Phase 2 (`phase2-hunt.js`)** owns its own DOM via a single template-string
+  literal at the top of the file. To add UI, edit that template; to add styling,
+  add rules under `/* ---- Phase 2: stamp hunt ---- */` in `styles.css`. Phase-2
+  selectors must be prefixed `p2-` and namespaced under `#ar-phase-2-host`.
+- **AR overlays** (`ar/*.js`) inject DOM into `.ar-ui-overlay`. They share the
+  topbar with the rest of the app — keep `pointer-events: none` on the overlay
+  root and re-enable it on interactive children only.
+- **Animation timing** is consistent: 0.15–0.28 s for micro-interactions
+  (hover/press), 0.4–0.6 s for screen/modal transitions. Use `cubic-bezier(0.22, 1, 0.36, 1)`
+  for confident slide-ins (matches `.p2-factsModal`).
+- **`<canvas>` Three.js mounts** must size themselves with `ResizeObserver`
+  (see `.p2-stampViewerCanvas` initialization) — never read `clientWidth/Height`
+  in a `requestAnimationFrame` loop.
+- **No new top-level dependencies** without explicit approval. UI work should
+  stay within HTML/CSS/JS.
