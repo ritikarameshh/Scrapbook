@@ -15,21 +15,7 @@ const TEMPLATE = `
   </div>
 
   <div class="p2-arrowHint">
-    <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <linearGradient id="p2ArrowGrad" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="#E8AE3D" />
-          <stop offset="100%" stop-color="#452222" />
-        </linearGradient>
-      </defs>
-      <path
-        d="M32 6 L52 36 L40 36 L40 58 L24 58 L24 36 L12 36 Z"
-        fill="url(#p2ArrowGrad)"
-        stroke="rgba(255,255,255,0.6)"
-        stroke-width="1.5"
-        stroke-linejoin="round"
-      />
-    </svg>
+    <img class="p2-arrowImg" src="./Assets/arrow.svg" alt="" aria-hidden="true" />
   </div>
 
   <div class="p2-countdownWrap">
@@ -1010,7 +996,7 @@ export async function startPhase2Hunt({
     const maxX = (w / 2) - margin, maxY = (h / 2) - margin;
     const scale = Math.min(maxX / Math.abs(ux || 0.0001), maxY / Math.abs(uy || 0.0001));
     const px = cx + ux * scale, py = cy + uy * scale;
-    const angle = Math.atan2(py - cy, px - cx) + Math.PI / 2;
+    const angle = Math.atan2(py - cy, px - cx);
     arrowHint.style.left = `${px}px`;
     arrowHint.style.top  = `${py}px`;
     arrowHint.style.transform = `translate(-50%, -50%) rotate(${angle}rad)`;
