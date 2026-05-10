@@ -5,7 +5,7 @@ const TEMPLATE = `
   <video class="p2-cameraVideo" autoplay muted playsinline></video>
   <canvas class="p2-threeCanvas"></canvas>
 
-  <div class="p2-statusBar p2-hidden">Look around to find the stamp 👀</div>
+  <div class="p2-statusBar p2-hidden">Look around to find the stamp</div>
 
   <div class="p2-compassHint">Calibrating compass…</div>
 
@@ -33,7 +33,7 @@ const TEMPLATE = `
     </svg>
     <div class="p2-countdownText">
       <div class="p2-countdownNumber">3</div>
-      <div class="p2-countdownLabel">Keep holding…</div>
+      <div class="p2-countdownLabel">Don&apos;t let go</div>
     </div>
   </div>
 
@@ -209,9 +209,9 @@ export async function startPhase2Hunt({
   let state = STATES.INIT;
   const STATUS_TEXTS = {
     [STATES.INIT]: '',
-    [STATES.SEARCHING]: 'Look around to find the stamp 👀',
-    [STATES.STAMP_IN_VIEW]: 'You found it! Now grab it ✋',
-    [STATES.GRABBING]: 'Keep holding…',
+    [STATES.SEARCHING]: 'Look around to find the stamp',
+    [STATES.STAMP_IN_VIEW]: 'Reach out and grab it by closing your fist!',
+    [STATES.GRABBING]: '',
     [STATES.COLLECTING]: '',
     [STATES.COLLECTED]: 'Stamp Collected! ✨',
     [STATES.FACTS_SHOWN]: '',
@@ -646,8 +646,6 @@ export async function startPhase2Hunt({
       if (state === STATES.GRABBING) {
         cancelCountdown();
         setState(STATES.STAMP_IN_VIEW);
-        statusBar.textContent = 'Grab it! ✋';
-        statusBar.classList.remove('p2-hidden');
       }
     }
   }
@@ -662,7 +660,7 @@ export async function startPhase2Hunt({
     countdown = { startSec: clock.elapsedTime, lastTickInt: 4 };
     countdownWrap.classList.add('p2-visible');
     countdownNumber.textContent = '3';
-    countdownLabel.textContent = 'Keep holding…';
+    countdownLabel.textContent = "Don't let go";
     setRingProgress(0);
   }
   function cancelCountdown() {
@@ -687,8 +685,6 @@ export async function startPhase2Hunt({
       else if (intRem === 2) vibrate(200);
       else if (intRem === 1) vibrate(300);
     }
-    if (p >= 0.33 && p < 0.66) countdownLabel.textContent = 'Almost…';
-    else if (p >= 0.66)        countdownLabel.textContent = "Don't let go!";
     if (p >= 1) completeCountdown();
   }
   function completeCountdown() {
@@ -1059,8 +1055,6 @@ export async function startPhase2Hunt({
         if (state === STATES.GRABBING) {
           cancelCountdown();
           setState(STATES.STAMP_IN_VIEW);
-          statusBar.textContent = 'Grab it! ✋';
-          statusBar.classList.remove('p2-hidden');
         }
       }
     }
