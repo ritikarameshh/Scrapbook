@@ -3,8 +3,18 @@
  * Phase modules toggle camera look-controls and entities; this file only mounts once per session.
  */
 
-import { LANDMARK_MIND_SRC } from './ar-config.js';
+import {
+  LANDMARK_MIND_SRC,
+  LANDMARK_MAX_TRACK,
+  LANDMARK_MIND_TARGET_COUNT,
+} from './ar-config.js';
 import { setArSceneEl } from './session-state.js';
+
+function buildLandmarkAnchorsHtml() {
+  return Array.from({ length: LANDMARK_MIND_TARGET_COUNT }, (_, i) => (
+    `<a-entity id="landmark-anchor-${i}" mindar-image-target="targetIndex: ${i}"></a-entity>`
+  )).join('\n      ');
+}
 
 export function getMindARVideoFromScene(sceneEl) {
   if (!sceneEl) return null;
@@ -25,7 +35,7 @@ export function mountPersistentMindARScene(container, opts = {}) {
 
   container.innerHTML = `
     <a-scene id="ar-scene" embedded
-      mindar-image="imageTargetSrc: ${LANDMARK_MIND_SRC}; uiScanning: no; uiLoading: no; uiError: no;"
+      mindar-image="imageTargetSrc: ${LANDMARK_MIND_SRC}; uiScanning: no; uiLoading: no; uiError: no; maxTrack: ${LANDMARK_MAX_TRACK};"
       vr-mode-ui="enabled: false"
       device-orientation-permission-ui="enabled: true"
       renderer="alpha: true"
@@ -38,7 +48,7 @@ export function mountPersistentMindARScene(container, opts = {}) {
         <a-light type="directional" color="#fff8f2" intensity="1.35" position="0 0.06 0"></a-light>
         <a-entity cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .gem-pin; far: 50"></a-entity>
       </a-camera>
-      <a-entity id="landmark-anchor-0" mindar-image-target="targetIndex: 0"></a-entity>
+      ${buildLandmarkAnchorsHtml()}
     </a-scene>`;
 
   const sceneEl = document.getElementById('ar-scene');

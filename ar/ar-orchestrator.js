@@ -2,7 +2,7 @@
  * AR flow coordinator: one MindAR session, phase modules swapped without camera teardown.
  */
 
-import { HIDDEN_GEMS, SECOND_SPOT_GEM_ID } from './ar-config.js';
+import { HIDDEN_GEMS, SECOND_SPOT_GEM_ID, LANDMARK_PHASE1_DISPLAY_NAME } from './ar-config.js';
 import { buildDirectionsUrl } from '../saved-spots.js';
 import * as homeStampState from '../home-stamp-state.js';
 import * as mindarHost from './ar-mindar-host.js';
@@ -62,15 +62,32 @@ function setARPhaseUI(phase) {
   phasePins.closeGemCard();
 }
 
+function escapeLandmarkHintHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/** Phase 1 landmark hint (name from `LANDMARK_PHASE1_DISPLAY_NAME`, bold in UI). */
+function buildLandmarkHintInnerHtml() {
+  const name = escapeLandmarkHintHtml(LANDMARK_PHASE1_DISPLAY_NAME);
+  return (
+    '<span>Capture </span>' +
+    '<strong>' +
+    name +
+    '</strong>' +
+    '<span> to find the stamp</span>'
+  );
+}
+
 function resetLandmarkHintUI() {
   const hint = document.querySelector('#ar-phase-outline .ar-hint');
   if (hint) {
     hint.classList.remove('ar-hint-insecure');
     hint.classList.add('landmark-hint');
-    hint.innerHTML =
-      '<span>Capture </span>' +
-      '<strong>the Metropolitan Museum of Art</strong>' +
-      '<span> to find the stamp</span>';
+    hint.innerHTML = buildLandmarkHintInnerHtml();
   }
 }
 

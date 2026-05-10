@@ -2,6 +2,18 @@
 
 export const LANDMARK_MIND_SRC = './met-detection/targets.mind';
 
+/**
+ * How many images are in `met-detection/targets.mind` — here, the **same** landmark (The Met)
+ * from different angles for coverage. Compiler order = anchor indices `0 … count-1`.
+ */
+export const LANDMARK_MIND_TARGET_COUNT = 3;
+
+/** MindAR `maxTrack` and number of `mindar-image-target` anchors — must match `.mind` image count. */
+export const LANDMARK_MAX_TRACK = LANDMARK_MIND_TARGET_COUNT;
+
+/** Phase 1 banner: all targets are this place, different reference photos. */
+export const LANDMARK_PHASE1_DISPLAY_NAME = 'the Metropolitan Museum of Art';
+
 export const OUTLINE_SRC = new URL('../Assets/LexingtonCandyShop.auto.png', import.meta.url).href;
 
 export const HIDDEN_GEMS = [
@@ -25,7 +37,7 @@ export const HIDDEN_GEMS = [
   {
     id: 'install',
     title: 'A hidden away art installation',
-    type: 'Art install.',
+    type: 'Art',
     walkMin: 11,
     color: '#E26E5F',
     mapsQuery: 'The Vessel at Hudson Yards, New York, NY',
