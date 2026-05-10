@@ -28,38 +28,65 @@
         <button type="button" class="btn btn-ghost btn-block splash-test-phase4" data-go="ar-scan" data-test-phase4="true">Dev: jump to phase 4 (outline)</button>
       </section>
 
-      <!-- ============ HOME — LOCATION CARD ============ -->
-      <section class="screen has-tabs" data-screen="home">
-        <header class="topbar topbar-location">
-          <small class="topbar-eyebrow">You're at</small>
-          <strong class="topbar-city">Empire State Building</strong>
-        </header>
-        <main class="screen-body location-body">
-          <div class="location-card">
-            <div class="location-stamp-preview">
-              <div class="stamp-disc">
-                <span class="stamp-name">EMPIRE</span>
-                <span class="stamp-sub">NYC · MAY</span>
+      <!-- ============ HOME — TRIP STAMPS ============ -->
+      <section class="screen screen-home" data-screen="home">
+        <main class="home-stamps">
+          <header class="home-stamps-header">
+            <h1>Your stamps</h1>
+            <button class="home-trip-picker" type="button" aria-label="Select trip">
+              <span>from</span>
+              <strong>New York</strong>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 9l6 6 6-6" />
+              </svg>
+            </button>
+          </header>
+
+          <section class="near-stamp-card" aria-label="Nearby stamp">
+            <div class="near-stamp-row">
+              <img class="near-stamp-thumb" src="Assets/Stamps/MissingStamp.png" alt="" />
+              <div class="near-stamp-copy">
+                <h2>You are near a stamp</h2>
+                <p>At the Metropolitan Museum of Art</p>
               </div>
             </div>
-            <p class="location-desc">Your stamp is hidden nearby. Scan to find it.</p>
-            <button class="btn btn-primary btn-block" data-go="ar-scan">Find your stamp →</button>
+            <button class="near-stamp-cta" type="button" data-go="ar-scan">Find it</button>
+          </section>
+
+          <div class="home-stamp-grid" aria-label="New York stamp collection">
+            <div class="home-stamp-column">
+              <article class="trip-stamp trip-stamp-tall">
+                <img src="Assets/Stamps/EmpireState.png" alt="Empire State Building stamp" />
+              </article>
+              <article class="trip-stamp trip-stamp-missing">
+                <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
+              </article>
+              <article class="trip-stamp trip-stamp-wide">
+                <img src="Assets/Stamps/BryantPark.png" alt="Bryant Park stamp" />
+              </article>
+              <article class="trip-stamp trip-stamp-tall-small">
+                <img src="Assets/Stamps/WorldTradeCenter.png" alt="World Trade Center stamp" />
+              </article>
+              <article class="trip-stamp trip-stamp-missing">
+                <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
+              </article>
+            </div>
+            <div class="home-stamp-column">
+              <article class="trip-stamp trip-stamp-square">
+                <img src="Assets/Stamps/TheMet.png" alt="The Metropolitan Museum of Art stamp" />
+              </article>
+              <article class="trip-stamp trip-stamp-tall">
+                <img src="Assets/Stamps/TimesSq.png" alt="Times Square stamp" />
+              </article>
+              <article class="trip-stamp trip-stamp-missing">
+                <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
+              </article>
+              <article class="trip-stamp trip-stamp-missing">
+                <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
+              </article>
+            </div>
           </div>
         </main>
-        <nav class="tabbar">
-          <button class="tab-btn active" data-go="home">
-            <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-            <small>Explore</small>
-          </button>
-          <button class="tab-btn" data-go="book">
-            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
-            <small>Book</small>
-          </button>
-          <button class="tab-btn" data-go="you">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4.5-6 7-6s6 2 7 6"/></svg>
-            <small>You</small>
-          </button>
-        </nav>
       </section>
 
       <!-- ============ AR SCAN ============ -->
@@ -71,7 +98,7 @@
         <div class="ar-ui-overlay">
           <header class="topbar topbar-overlay">
             <button class="icon-btn light" data-back aria-label="Close">✕</button>
-            <span class="ar-label">Empire State Building</span>
+            <span class="topbar-spacer"></span>
             <span class="topbar-spacer"></span>
           </header>
 
@@ -170,12 +197,12 @@
         </main>
         <footer class="screen-footer split">
           <button class="btn btn-ghost" data-go="home">Keep exploring</button>
-          <button class="btn btn-primary" data-go="book">See the book →</button>
+          <button class="btn btn-primary" data-go="home">See the book →</button>
         </footer>
       </section>
 
       <!-- ============ BOOK ============ -->
-      <section class="screen has-tabs" data-screen="book">
+      <section class="screen" data-screen="book">
         <header class="topbar topbar-book">
           <div>
             <small class="topbar-eyebrow">Trip</small>
@@ -359,24 +386,10 @@
             </button>
           </div>
         </main>
-        <nav class="tabbar">
-          <button class="tab-btn" data-go="home">
-            <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-            <small>Explore</small>
-          </button>
-          <button class="tab-btn active">
-            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
-            <small>Book</small>
-          </button>
-          <button class="tab-btn" data-go="you">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4.5-6 7-6s6 2 7 6"/></svg>
-            <small>You</small>
-          </button>
-        </nav>
       </section>
 
       <!-- ============ YOU ============ -->
-      <section class="screen has-tabs" data-screen="you">
+      <section class="screen" data-screen="you">
         <header class="topbar"><span class="topbar-spacer"></span><strong class="topbar-title">You</strong><button class="icon-btn ghost">⚙</button></header>
         <main class="screen-body">
           <div class="you-card">
@@ -406,20 +419,6 @@
             <span class="friend-av av-3">+</span>
           </div>
         </main>
-        <nav class="tabbar">
-          <button class="tab-btn" data-go="home">
-            <svg viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 1 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
-            <small>Explore</small>
-          </button>
-          <button class="tab-btn" data-go="book">
-            <svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="1.5"/><rect x="13" y="4" width="7" height="7" rx="1.5"/><rect x="4" y="13" width="7" height="7" rx="1.5"/><rect x="13" y="13" width="7" height="7" rx="1.5"/></svg>
-            <small>Book</small>
-          </button>
-          <button class="tab-btn active">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4.5-6 7-6s6 2 7 6"/></svg>
-            <small>You</small>
-          </button>
-        </nav>
       </section>
 
     </div>

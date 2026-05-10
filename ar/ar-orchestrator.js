@@ -44,8 +44,11 @@ function resetLandmarkHintUI() {
   const hint = document.querySelector('#ar-phase-outline .ar-hint');
   if (hint) {
     hint.classList.remove('ar-hint-insecure');
-    hint.textContent =
-      'Point the camera at the printed landmark (demo uses The Met targets from ritika/landmark-detection)';
+    hint.classList.add('landmark-hint');
+    hint.innerHTML =
+      '<span>Capture </span>' +
+      '<strong>the Metropolitan Museum of Art</strong>' +
+      '<span> to find the stamp</span>';
   }
 }
 
@@ -53,6 +56,7 @@ function warnInsecureContext() {
   if (window.isSecureContext) return;
   const hint = document.querySelector('#ar-phase-outline .ar-hint');
   if (hint) {
+    hint.classList.remove('landmark-hint');
     hint.classList.add('ar-hint-insecure');
     hint.textContent =
       'Camera needs HTTPS on a phone. Use the https://….trycloudflare.com link from “npm run tunnel” on your computer — not http://192.168… or http://10.….';

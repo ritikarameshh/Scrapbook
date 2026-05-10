@@ -24,6 +24,7 @@ export function resetOutlineHint() {
   const hint = document.querySelector('#ar-phase-outline .ar-hint');
   if (hint) {
     hint.classList.remove('ar-hint-insecure');
+    hint.classList.remove('landmark-hint');
     hint.textContent = 'Match the outline to what you see';
   }
 }
