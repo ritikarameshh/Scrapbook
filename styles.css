@@ -29,6 +29,10 @@
   --neutral-800: #2C2C2C;
   --neutral-900: #161616;
   --neutral-0-rgb: 255, 255, 255;
+  /* Warm paper dock tint (Figma 81:445) */
+  --warm-paper-rgb: 250, 250, 247;
+  /* Bottom scroll inset for shared #app-tab-dock (tabs ± stamp alert) */
+  --app-dock-clearance: 100px;
 
   /* Semantic surface + ink aliases */
   --bg:        #ECECEA;            /* warm paper page background */
@@ -89,6 +93,10 @@
   --tabbar-float-inline: 12px;
   --tabbar-float-bottom: 8px;
   --topbar-h: 52px;
+}
+
+body.app-dock-stamp-visible {
+  --app-dock-clearance: 184px;
 }
 
 /* ============ Reset ============ */
@@ -169,7 +177,6 @@ p { margin: 0; }
   grid-template-columns: 1fr 1.3fr;
   gap: 10px;
 }
-.screen.has-tabs .screen-body { padding-bottom: calc(var(--tabbar-h) + 24px); }
 
 /* ============ Topbar ============ */
 .topbar {
@@ -437,11 +444,15 @@ p { margin: 0; }
 .home-stamps {
   position: relative;
   z-index: 1;
-  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding: calc(env(safe-area-inset-top) + 32px) 16px 40px;
+  padding: calc(env(safe-area-inset-top) + 32px) 16px 24px;
+}
+.screen-home.has-tabs {
+  flex-direction: column;
 }
 .home-stamps::-webkit-scrollbar { display: none; }
 .home-stamps-header {
@@ -494,57 +505,104 @@ p { margin: 0; }
   stroke-linecap: round;
   stroke-linejoin: round;
 }
-.near-stamp-card {
-  width: 100%;
-  padding: 16px;
-  margin-bottom: 24px;
+/* Shared app bottom dock — stamp alert + tabs (Figma 81:445, one pill; all main tabs) */
+#app-tab-dock.app-tab-dock {
+  flex-shrink: 0;
+  position: absolute;
+  left: var(--tabbar-float-inline);
+  right: var(--tabbar-float-inline);
+  bottom: var(--tabbar-float-bottom);
+  z-index: 20;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  background: rgba(255,255,255,0.5);
-  border: 1px solid var(--neutral-200);
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-  overflow: hidden;
+  gap: 8px;
+  margin: 0;
+  padding: 4px;
+  padding-bottom: calc(4px + env(safe-area-inset-bottom));
+  background: rgba(var(--warm-paper-rgb), 0.88);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border: 1px solid var(--neutral-100);
+  border-radius: var(--tabbar-pill-radius);
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.09);
 }
-.near-stamp-row {
+#app-tab-dock[hidden] {
+  display: none !important;
+}
+.stamp-alert {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+.stamp-alert[hidden] {
+  display: none !important;
+}
+.stamp-alert-card {
+  padding: 8px;
+  border-radius: 12px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+.stamp-alert-divider {
+  display: block;
+  height: 0;
+  margin: 0;
+  border: 0;
+  border-top: 1px dashed var(--neutral-200);
+}
+.app-tab-dock .near-stamp-row {
+  display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 12px;
   width: 100%;
 }
-.near-stamp-thumb {
-  width: 48px;
-  height: 48px;
+.app-tab-dock .near-stamp-thumb-wrap {
   flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+}
+.app-tab-dock .near-stamp-thumb {
+  width: 32px;
+  height: 32px;
   object-fit: cover;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.45);
+  border-radius: 2px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   transform: rotate(-6deg);
 }
-.near-stamp-copy {
+.app-tab-dock .near-stamp-copy {
+  flex: 1 1 auto;
   min-width: 0;
-  color: var(--neutral-800);
+  color: var(--neutral-900);
 }
-.near-stamp-copy h2 {
+.app-tab-dock .near-stamp-title {
   margin: 0 0 1px;
   font-family: var(--font-display);
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.2;
   letter-spacing: -0.02em;
   font-variation-settings: 'SOFT' 0, 'WONK' 1;
+  color: var(--neutral-900);
 }
-.near-stamp-copy p {
+.app-tab-dock .near-stamp-sub {
+  margin: 0;
   font-family: var(--font-sans);
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 400;
   line-height: 1.2;
   letter-spacing: -0.02em;
+  color: var(--neutral-900);
 }
-.near-stamp-cta {
-  width: 100%;
+.app-tab-dock .near-stamp-cta {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
   height: 32px;
-  padding: 0 20px;
+  min-height: 32px;
+  padding: 0 12px;
   border-radius: 8px;
   background: var(--primary-500);
   color: var(--neutral-0);
@@ -554,8 +612,33 @@ p { margin: 0; }
   line-height: 1.2;
   letter-spacing: -0.02em;
   text-align: center;
+  box-shadow: none;
 }
-.near-stamp-cta:active { transform: scale(0.99); }
+.app-tab-dock .near-stamp-cta:active {
+  transform: scale(0.99);
+}
+/* Tab row: only the joint pill carries chrome (Figma 81:445) */
+.app-tab-dock .tabbar {
+  position: static;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  margin: 0;
+  min-height: 51px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  z-index: auto;
+}
+.app-tab-dock .tab-btn {
+  min-height: 51px;
+  padding: 6px 4px 8px;
+  font-size: 10.4px;
+}
 .home-stamp-tabs {
   display: flex;
   align-items: center;
@@ -628,9 +711,11 @@ p { margin: 0; }
 .trip-stamp:not(.trip-stamp-missing) {
   mix-blend-mode: multiply;
 }
+/* Slot ratios match stamp PNG pixel dimensions under Assets/Stamps (object-fit: cover, no stretch). */
 .trip-stamp-square { aspect-ratio: 1 / 1; }
-.trip-stamp-tall { aspect-ratio: 1122 / 1402; }
-.trip-stamp-tall-small { aspect-ratio: 168 / 223; }
+.trip-stamp-tall { aspect-ratio: 177 / 220; }
+.trip-stamp-tall-small { aspect-ratio: 177 / 233; }
+.trip-stamp-landscape { aspect-ratio: 177 / 134; }
 .trip-stamp-wide { aspect-ratio: 164 / 123; }
 .trip-stamp-missing {
   aspect-ratio: 1 / 1;
@@ -1852,9 +1937,11 @@ p { margin: 0; }
   transform: scale(0.97);
 }
 
-.screen.has-tabs > .home-stamps,
-.screen.has-tabs > .screen-body {
-  padding-bottom: calc(var(--tabbar-h) + 32px);
+.screen.has-tabs > .home-stamps {
+  padding-bottom: calc(24px + var(--app-dock-clearance));
+}
+.screen.has-tabs:not(.screen-home) > .screen-body {
+  padding-bottom: calc(24px + var(--app-dock-clearance));
 }
 
 /* ============ Spots — saved hidden gems ============ */
@@ -1871,7 +1958,7 @@ p { margin: 0; }
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  padding-bottom: calc(var(--tabbar-h) + 32px);
+  padding-bottom: calc(24px + var(--app-dock-clearance));
 }
 .screen-spots > .spots-scroll::-webkit-scrollbar { display: none; }
 .screen-spots > .spots-scroll > .spots-body {

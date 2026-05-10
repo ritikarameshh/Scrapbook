@@ -42,17 +42,6 @@
             </button>
           </header>
 
-          <section class="near-stamp-card" aria-label="Nearby stamp">
-            <div class="near-stamp-row">
-              <img class="near-stamp-thumb" src="Assets/Stamps/MissingStamp.png" alt="" />
-              <div class="near-stamp-copy">
-                <h2>You are near a stamp</h2>
-                <p>At the Metropolitan Museum of Art</p>
-              </div>
-            </div>
-            <button class="near-stamp-cta" type="button" data-go="ar-scan">Find it</button>
-          </section>
-
           <nav class="home-stamp-tabs" role="tablist" aria-label="Filter stamps" data-stamp-tabs>
             <button class="home-stamp-tab active" type="button" role="tab" aria-selected="true" data-stamp-filter="all">All</button>
             <button class="home-stamp-tab" type="button" role="tab" aria-selected="false" data-stamp-filter="landmark">Landmarks</button>
@@ -84,8 +73,8 @@
               <article class="trip-stamp trip-stamp-tall" data-category="landmark">
                 <img src="Assets/Stamps/TimesSq.png" alt="Times Square stamp" />
               </article>
-              <article class="trip-stamp trip-stamp-missing" data-category="gem">
-                <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
+              <article class="trip-stamp trip-stamp-landscape" data-category="landmark">
+                <img src="Assets/Stamps/BryantPark.png" alt="Bryant Park stamp" />
               </article>
               <article class="trip-stamp trip-stamp-missing" data-category="landmark">
                 <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
@@ -93,24 +82,6 @@
             </div>
           </div>
         </main>
-        <nav class="tabbar" data-app-tabbar aria-label="Primary">
-          <button class="tab-btn" type="button" data-go="spots" data-tab="spots">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3H7a2 2 0 0 0-2 2v16l8-3.45 8 3.45V5a2 2 0 0 0-2-2z"/></svg>
-            <span>Spots</span>
-          </button>
-          <button class="tab-btn active" type="button" data-go="home" data-tab="home" aria-current="page">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6.25A3.25 3.25 0 0 1 7.25 3H11v18H7.25A3.25 3.25 0 0 1 4 17.75V6.25ZM12 3h3.75A3.25 3.25 0 0 1 19 6.25v11.5A3.25 3.25 0 0 1 15.75 21H12V3Z"/></svg>
-            <span>Book</span>
-          </button>
-          <button class="tab-btn" type="button" data-go="feed" data-tab="feed">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 5.25h6.25v6.25H5V5.25Zm8.75 0H20v6.25h-6.25V5.25ZM5 14h6.25v6.25H5V14Zm8.75 0H20v6.25h-6.25V14Z"/></svg>
-            <span>Feed</span>
-          </button>
-          <button class="tab-btn" type="button" data-go="you" data-tab="you">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12.25a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM3.75 20.5c0-3.86 3.1-7 8.25-7s8.25 3.14 8.25 7v1H3.75v-1Z"/></svg>
-            <span>You</span>
-          </button>
-        </nav>
       </section>
 
       <!-- ============ SPOTS — saved hidden gems ============ -->
@@ -133,24 +104,6 @@
           <div id="saved-spots-list" class="saved-spots-list" hidden></div>
         </main>
         </div>
-        <nav class="tabbar" data-app-tabbar aria-label="Primary">
-          <button class="tab-btn active" type="button" data-go="spots" data-tab="spots" aria-current="page">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3H7a2 2 0 0 0-2 2v16l8-3.45 8 3.45V5a2 2 0 0 0-2-2z"/></svg>
-            <span>Spots</span>
-          </button>
-          <button class="tab-btn" type="button" data-go="home" data-tab="home">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6.25A3.25 3.25 0 0 1 7.25 3H11v18H7.25A3.25 3.25 0 0 1 4 17.75V6.25ZM12 3h3.75A3.25 3.25 0 0 1 19 6.25v11.5A3.25 3.25 0 0 1 15.75 21H12V3Z"/></svg>
-            <span>Book</span>
-          </button>
-          <button class="tab-btn" type="button" data-go="feed" data-tab="feed">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 5.25h6.25v6.25H5V5.25Zm8.75 0H20v6.25h-6.25V5.25ZM5 14h6.25v6.25H5V14Zm8.75 0H20v6.25h-6.25V14Z"/></svg>
-            <span>Feed</span>
-          </button>
-          <button class="tab-btn" type="button" data-go="you" data-tab="you">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12.25a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM3.75 20.5c0-3.86 3.1-7 8.25-7s8.25 3.14 8.25 7v1H3.75v-1Z"/></svg>
-            <span>You</span>
-          </button>
-        </nav>
       </section>
 
       <!-- ============ FEED — placeholder ============ -->
@@ -171,24 +124,6 @@
             <p>The feed is on its way. Check back soon.</p>
           </div>
         </main>
-        <nav class="tabbar" data-app-tabbar aria-label="Primary">
-          <button class="tab-btn" type="button" data-go="spots" data-tab="spots">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3H7a2 2 0 0 0-2 2v16l8-3.45 8 3.45V5a2 2 0 0 0-2-2z"/></svg>
-            <span>Spots</span>
-          </button>
-          <button class="tab-btn" type="button" data-go="home" data-tab="home">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6.25A3.25 3.25 0 0 1 7.25 3H11v18H7.25A3.25 3.25 0 0 1 4 17.75V6.25ZM12 3h3.75A3.25 3.25 0 0 1 19 6.25v11.5A3.25 3.25 0 0 1 15.75 21H12V3Z"/></svg>
-            <span>Book</span>
-          </button>
-          <button class="tab-btn active" type="button" data-go="feed" data-tab="feed" aria-current="page">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 5.25h6.25v6.25H5V5.25Zm8.75 0H20v6.25h-6.25V5.25ZM5 14h6.25v6.25H5V14Zm8.75 0H20v6.25h-6.25V14Z"/></svg>
-            <span>Feed</span>
-          </button>
-          <button class="tab-btn" type="button" data-go="you" data-tab="you">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12.25a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM3.75 20.5c0-3.86 3.1-7 8.25-7s8.25 3.14 8.25 7v1H3.75v-1Z"/></svg>
-            <span>You</span>
-          </button>
-        </nav>
       </section>
 
       <!-- ============ AR SCAN ============ -->
@@ -529,12 +464,31 @@
             <span class="friend-av av-3">+</span>
           </div>
         </main>
+      </section>
+
+      <!-- Shared bottom dock: stamp alert + tab bar (all main tabs) — Figma 81:445 -->
+      <div id="app-tab-dock" class="app-tab-dock" hidden>
+        <div id="stamp-alert" class="stamp-alert" aria-label="Nearby stamp">
+          <div class="stamp-alert-card">
+            <div class="near-stamp-row">
+              <div class="near-stamp-thumb-wrap">
+                <img class="near-stamp-thumb" src="Assets/Stamps/MissingStamp.png" alt="" />
+              </div>
+              <div class="near-stamp-copy">
+                <p class="near-stamp-title">You are near a stamp</p>
+                <p class="near-stamp-sub">At the Metropolitan Museum of Art</p>
+              </div>
+              <button class="near-stamp-cta" type="button" data-go="ar-scan">Find it</button>
+            </div>
+          </div>
+          <div class="stamp-alert-divider" aria-hidden="true"></div>
+        </div>
         <nav class="tabbar" data-app-tabbar aria-label="Primary">
           <button class="tab-btn" type="button" data-go="spots" data-tab="spots">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M17 3H7a2 2 0 0 0-2 2v16l8-3.45 8 3.45V5a2 2 0 0 0-2-2z"/></svg>
             <span>Spots</span>
           </button>
-          <button class="tab-btn" type="button" data-go="home" data-tab="home">
+          <button class="tab-btn active" type="button" data-go="home" data-tab="home" aria-current="page">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M4 6.25A3.25 3.25 0 0 1 7.25 3H11v18H7.25A3.25 3.25 0 0 1 4 17.75V6.25ZM12 3h3.75A3.25 3.25 0 0 1 19 6.25v11.5A3.25 3.25 0 0 1 15.75 21H12V3Z"/></svg>
             <span>Book</span>
           </button>
@@ -542,12 +496,12 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M5 5.25h6.25v6.25H5V5.25Zm8.75 0H20v6.25h-6.25V5.25ZM5 14h6.25v6.25H5V14Zm8.75 0H20v6.25h-6.25V14Z"/></svg>
             <span>Feed</span>
           </button>
-          <button class="tab-btn active" type="button" data-go="you" data-tab="you" aria-current="page">
+          <button class="tab-btn" type="button" data-go="you" data-tab="you">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 12.25a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM3.75 20.5c0-3.86 3.1-7 8.25-7s8.25 3.14 8.25 7v1H3.75v-1Z"/></svg>
             <span>You</span>
           </button>
         </nav>
-      </section>
+      </div>
 
     </div>
   </div>
@@ -566,7 +520,6 @@
     }
   }
   </script>
-  <script src="https://mcp.figma.com/mcp/html-to-design/capture.js" async></script>
   <script type="module" src="script.js"></script>
 </body>
 </html>

@@ -5,7 +5,7 @@
  */
 import * as arOrchestrator from './ar/ar-orchestrator.js';
 import * as savedSpots from './saved-spots.js';
-import { syncHomeMetStampFromSession } from './home-stamp-state.js';
+import { syncHomeMetStampFromSession, syncNearStampVisibilityFromSession } from './home-stamp-state.js';
 
 (function installRelaxedCameraGetUserMedia() {
   if (typeof window === 'undefined' || window.__scrapbookGumPatched) return;
@@ -49,6 +49,19 @@ const navHistory = ['splash'];
 /** When true, the next AR session skips MindAR phase 1 and opens phase 4 (outline) for testing. */
 let nextArStartTestPhase4 = false;
 
+const MAIN_TAB_SCREENS = new Set(['home', 'spots', 'feed', 'you']);
+
+/** Shared bottom dock (stamp alert + tab bar) on main tabs only; stamp banner clears body padding when hidden. */
+function syncAppTabDock(screenName) {
+  const dock = document.getElementById('app-tab-dock');
+  if (!dock) return;
+  const onMainTab = MAIN_TAB_SCREENS.has(screenName);
+  dock.hidden = !onMainTab;
+  const stamp = document.getElementById('stamp-alert');
+  const stampShowing = onMainTab && stamp && !stamp.hidden;
+  document.body.classList.toggle('app-dock-stamp-visible', !!stampShowing);
+}
+
 function show(name) {
   const target = document.querySelector(`.screen[data-screen="${name}"]`);
   if (!target) return;
@@ -66,14 +79,15 @@ function show(name) {
   if (homeMain) homeMain.scrollTop = 0;
 
   if (name === 'spots') savedSpots.renderSpotsScreen();
+  syncAppTabDock(name);
   syncTabbarActive(name);
 
   if (name === 'ar-scan') startAR();
 }
 
 /**
- * Update the bottom tab bar active state across every tabbar instance to reflect
- * the current screen. The "Book" tab represents the home/stamps screen.
+ * Update the shared bottom tab bar active state to match the current screen.
+ * The "Book" tab is home/stamps.
  */
 function syncTabbarActive(screenName) {
   const tabName = screenName === 'home' ? 'home' : screenName;
@@ -193,4 +207,5 @@ savedSpots.renderSpotsScreen();
 
 // ============ Boot ============
 syncHomeMetStampFromSession();
+syncNearStampVisibilityFromSession();
 show('splash');
