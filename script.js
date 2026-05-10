@@ -5,7 +5,7 @@
  */
 import * as arOrchestrator from './ar/ar-orchestrator.js';
 import * as savedSpots from './saved-spots.js';
-import { syncHomeMetStampFromSession, syncNearStampVisibilityFromSession } from './home-stamp-state.js';
+import { syncHomeMetStampFromSession } from './home-stamp-state.js';
 
 (function installRelaxedCameraGetUserMedia() {
   if (typeof window === 'undefined' || window.__scrapbookGumPatched) return;
@@ -207,5 +207,4 @@ savedSpots.renderSpotsScreen();
 
 // ============ Boot ============
 syncHomeMetStampFromSession();
-syncNearStampVisibilityFromSession();
 show('splash');
