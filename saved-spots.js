@@ -7,7 +7,8 @@
  * here are independent of that action.
  *
  * Each card has:
- *   • a "Get directions" button (opens Google Maps directions to the gem)
+ *   • First card: "I'm here" opens AR on phase 4 (outline match) for that spot.
+ *   • Other cards: "Get directions" (Google Maps walking directions).
  *   • an in-session "✕" remove button (removes the card from the DOM only)
  */
 
@@ -49,12 +50,29 @@ function escapeHtml(str) {
   });
 }
 
-function buildSavedSpotCard(gem) {
+function buildSavedSpotCard(gem, firstCardUsesImHere = false) {
   const card = document.createElement('article');
-  card.className = 'saved-spot-card';
+  card.className = firstCardUsesImHere
+    ? 'saved-spot-card saved-spot-card--featured'
+    : 'saved-spot-card';
   card.dataset.spotId = gem.id;
 
   const accent = gem.color || 'var(--primary-500)';
+
+  const primaryBtn = firstCardUsesImHere
+    ? `
+    <button type="button" class="btn btn-primary btn-block saved-spot-im-here" data-go="ar-scan" data-jump-phase4="true">
+      I'm here
+    </button>
+  `
+    : `
+    <button type="button" class="btn btn-primary btn-block saved-spot-directions" data-spot-directions>
+      <svg class="saved-spot-directions-icon" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5L17.5 11z" fill="currentColor"/>
+      </svg>
+      <span>Get directions</span>
+    </button>
+  `;
 
   card.innerHTML = `
     <button type="button" class="saved-spot-remove" data-spot-remove aria-label="Remove saved spot">
@@ -66,12 +84,7 @@ function buildSavedSpotCard(gem) {
     <p class="saved-spot-type">${escapeHtml(gem.type || 'Spot')}</p>
     <h3 class="saved-spot-title">${escapeHtml(gem.title || 'Saved spot')}</h3>
     <p class="saved-spot-meta">${escapeHtml(`${gem.walkMin ?? '—'} min walk`)}</p>
-    <button type="button" class="btn btn-primary btn-block saved-spot-directions" data-spot-directions>
-      <svg class="saved-spot-directions-icon" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M21.71 11.29l-9-9a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42l9 9a1 1 0 0 0 1.42 0l9-9a1 1 0 0 0 0-1.42zM14 14.5V12h-4v3H8v-4a1 1 0 0 1 1-1h5V7.5L17.5 11z" fill="currentColor"/>
-      </svg>
-      <span>Get directions</span>
-    </button>
+    ${primaryBtn}
   `;
 
   const accentEl = card.querySelector('.saved-spot-accent');
@@ -97,10 +110,10 @@ export function renderSpotsScreen() {
   const list = document.getElementById('saved-spots-list');
   if (!list) return;
   list.innerHTML = '';
-  DEMO_SPOT_IDS.forEach((id) => {
+  DEMO_SPOT_IDS.forEach((id, index) => {
     const gem = gemById(id);
     if (!gem) return;
-    list.appendChild(buildSavedSpotCard(gem));
+    list.appendChild(buildSavedSpotCard(gem, index === 0));
   });
   syncEmptyState();
 }

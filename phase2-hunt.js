@@ -124,6 +124,10 @@ export async function startPhase2Hunt({
       body: 'You could visit every day for a year and still not see it all.',
     },
   ],
+  /** Post–outline Lexington Candy hunt: primary CTA = Done, exits to Book via onCollected. */
+  secondSpotStamp = false,
+  /** Facts bottomsheet ✕ only: leave AR to Book without firing onCollected. */
+  onExitFactsViaClose = null,
 }) {
   if (activeInstance) stopPhase2Hunt();
   if (!host) throw new Error('phase2-hunt: host element required');
@@ -174,6 +178,8 @@ export async function startPhase2Hunt({
   const featuredFactEl = $('.p2-featuredFact');
   const shareBtn      = $('.p2-shareBtn');
   const dismissBtn    = $('.p2-dismissBtn');
+  const dismissBtnTitleEl = $('.p2-dismissBtnTitle');
+  const dismissBtnSubEl = $('.p2-dismissBtnSub');
   const factsCloseBtn = $('.p2-factsClose');
 
   /* ---- Config ---- */
@@ -1264,13 +1270,21 @@ export async function startPhase2Hunt({
   }
 
   /* ---- Wire UI events ---- */
-  const handleDismiss = () => {
+  const handleCollectedDismiss = () => {
     hideFactsModal();
     if (typeof onCollected === 'function') onCollected();
   };
-  dismissBtn.addEventListener('click', handleDismiss);
-  factsBackdrop.addEventListener('click', handleDismiss);
-  factsCloseBtn?.addEventListener('click', handleDismiss);
+  dismissBtn.addEventListener('click', handleCollectedDismiss);
+  factsBackdrop.addEventListener('click', handleCollectedDismiss);
+  factsCloseBtn?.addEventListener('click', () => {
+    hideFactsModal();
+    if (typeof onExitFactsViaClose === 'function') onExitFactsViaClose();
+  });
+
+  if (secondSpotStamp) {
+    if (dismissBtnTitleEl) dismissBtnTitleEl.textContent = 'Done';
+    if (dismissBtnSubEl) dismissBtnSubEl.hidden = true;
+  }
 
   let touchStartY = null;
   factsModal.addEventListener('touchstart', (e) => {
@@ -1289,7 +1303,7 @@ export async function startPhase2Hunt({
     const dy = (e.changedTouches[0].clientY - touchStartY);
     factsModal.style.transition = '';
     factsModal.style.transform = '';
-    if (dy > 110) handleDismiss();
+    if (dy > 110) handleCollectedDismiss();
     touchStartY = null;
   }, { passive: true });
 

@@ -3,6 +3,7 @@
  */
 
 import { SECOND_SPOT_GEM_ID } from './ar-config.js';
+import * as homeStampState from '../home-stamp-state.js';
 import * as mindarHost from './ar-mindar-host.js';
 import * as phaseLandmark from './ar-phase-landmark.js';
 import * as phaseOutline from './ar-phase-outline.js';
@@ -108,8 +109,20 @@ function bindGemUiOnce() {
     }
     if (t.closest('[data-gem-save]')) {
       e.stopPropagation();
-      // Demo: spot is not actually persisted — Spots tab is prepopulated.
-      // Just confirm the action visually.
+      const btn = t.closest('[data-gem-save]');
+      const id = phasePins.getCurrentGemId();
+      const label = btn?.querySelector('.gem-detail-save-label');
+      if (btn?.classList.contains('gem-detail-save--saved')) {
+        if (id) phasePins.unmarkGemSavedForLater(id);
+        btn.classList.remove('gem-detail-save--saved');
+        if (label) label.textContent = 'Save for later';
+        btn.setAttribute('aria-pressed', 'false');
+        return;
+      }
+      if (id) phasePins.markGemSavedForLater(id);
+      btn?.classList.add('gem-detail-save--saved');
+      if (label) label.textContent = 'Saved';
+      btn?.setAttribute('aria-pressed', 'true');
       phasePins.showGemToast('Saved for later');
     }
   });
@@ -155,6 +168,9 @@ async function transitionToPhase2(options = {}) {
       host,
       sharedVideoElement: video || undefined,
       ...phase2Config,
+      secondSpotStamp,
+      /** Facts modal ✕ exits AR to the main Book tab (`home` screen). */
+      onExitFactsViaClose: () => navigateGo?.('home'),
       onCollected: collectStamp,
       onError: (msg) => showHintError?.(msg),
     });
@@ -211,9 +227,10 @@ function collectStamp() {
   if (pendingSecondSpotCompletion) {
     pendingSecondSpotCompletion = false;
     stopARSession();
-    navigateGo?.('book');
+    navigateGo?.('home');
     return;
   }
+  homeStampState.persistMetCollectedAndReveal();
   transitionToPhase3();
 }
 
@@ -276,10 +293,22 @@ export function startARSession(opts) {
     });
 }
 
+/**
+ * While on the Lexington (second-spot) stamp hunt, AR overlay ✕ returns to Book
+ * instead of generic history-back.
+ */
+export function interceptRepeatedStampHuntBackToBook() {
+  if (!pendingSecondSpotCompletion || getArPhase() !== 2) return false;
+  stopARSession();
+  navigateGo?.('home');
+  return true;
+}
+
 export function stopARSession() {
   setArPhase(0);
   phase1LandmarkMatched = false;
   pendingSecondSpotCompletion = false;
+  phasePins.resetGemSaveState();
 
   try {
     phase2HuntModule?.stopPhase2Hunt();

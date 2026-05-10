@@ -1872,6 +1872,15 @@ p { margin: 0; }
   gap: 8px;
   overflow: hidden;
 }
+/* Lexington / “I’m here” card — draws the eye toward the AR entry point */
+.saved-spot-card--featured {
+  background: var(--primary-50);
+  border-color: var(--primary-300);
+  box-shadow: var(--shadow-sm), 0 0 0 2px var(--primary-100);
+}
+.saved-spot-card--featured .saved-spot-accent {
+  width: 5px;
+}
 .saved-spot-accent {
   position: absolute;
   top: 0;
@@ -1930,6 +1939,10 @@ p { margin: 0; }
   font-family: var(--font-sans);
   font-size: 0.88rem;
   color: var(--neutral-600);
+}
+.saved-spot-im-here {
+  width: 100%;
+  margin-top: 4px;
 }
 .saved-spot-directions {
   width: 100%;
@@ -2093,6 +2106,23 @@ p { margin: 0; }
   width: 16px;
   height: 16px;
   flex: 0 0 auto;
+}
+.gem-detail-save-icon path {
+  fill: none;
+  stroke: currentColor;
+}
+.gem-detail-save--saved {
+  color: var(--brand);
+  border-color: var(--brand);
+}
+.gem-detail-save--saved .gem-detail-save-icon path {
+  fill: var(--brand);
+  stroke: none;
+}
+.gem-detail-save--saved:hover {
+  background: var(--primary-50);
+  color: var(--brand);
+  border-color: var(--brand);
 }
 
 .gem-toast {

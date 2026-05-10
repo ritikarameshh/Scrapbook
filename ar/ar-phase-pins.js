@@ -9,6 +9,20 @@ import * as phase3Magic from './ar-phase3-magic-window.js';
 
 let currentGemId = null;
 let gemToastTimer = null;
+/** Demo: which gems were saved in this AR session (persists when reopening a pin). */
+const savedGemIds = new Set();
+
+export function resetGemSaveState() {
+  savedGemIds.clear();
+}
+
+export function markGemSavedForLater(id) {
+  savedGemIds.add(id);
+}
+
+export function unmarkGemSavedForLater(id) {
+  savedGemIds.delete(id);
+}
 
 export function getCurrentGemId() {
   return currentGemId;
@@ -39,6 +53,14 @@ export function openGemCard(id) {
   if (titleEl) titleEl.textContent = gem.title;
   if (typeEl) typeEl.textContent = gem.type;
   if (walkEl) walkEl.textContent = `${gem.walkMin} min walk`;
+  const saveBtn = card?.querySelector('[data-gem-save]');
+  if (saveBtn) {
+    const label = saveBtn.querySelector('.gem-detail-save-label');
+    const saved = savedGemIds.has(id);
+    saveBtn.classList.toggle('gem-detail-save--saved', saved);
+    saveBtn.setAttribute('aria-pressed', saved ? 'true' : 'false');
+    if (label) label.textContent = saved ? 'Saved' : 'Save for later';
+  }
   if (card) card.hidden = false;
 }
 

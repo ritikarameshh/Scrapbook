@@ -5,6 +5,7 @@
  */
 import * as arOrchestrator from './ar/ar-orchestrator.js';
 import * as savedSpots from './saved-spots.js';
+import { syncHomeMetStampFromSession } from './home-stamp-state.js';
 
 (function installRelaxedCameraGetUserMedia() {
   if (typeof window === 'undefined' || window.__scrapbookGumPatched) return;
@@ -109,11 +110,14 @@ document.addEventListener('click', (e) => {
     return;
   }
   if (goBtn) {
-    nextArStartTestPhase4 = goBtn.dataset.testPhase4 === 'true';
+    nextArStartTestPhase4 =
+      goBtn.dataset.testPhase4 === 'true' || goBtn.dataset.jumpPhase4 === 'true';
     go(goBtn.dataset.go);
     return;
   }
   if (backBtn) {
+    const onArScan = document.querySelector('.screen.screen-ar-scan.active');
+    if (onArScan && arOrchestrator.interceptRepeatedStampHuntBackToBook()) return;
     back();
     return;
   }
@@ -188,4 +192,5 @@ savedSpots.bindSpotsScreen();
 savedSpots.renderSpotsScreen();
 
 // ============ Boot ============
+syncHomeMetStampFromSession();
 show('splash');

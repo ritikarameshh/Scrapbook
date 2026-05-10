@@ -78,8 +78,8 @@
               </article>
             </div>
             <div class="home-stamp-column">
-              <article class="trip-stamp trip-stamp-square" data-category="landmark">
-                <img src="Assets/Stamps/TheMet.png" alt="The Metropolitan Museum of Art stamp" />
+              <article class="trip-stamp trip-stamp-square trip-stamp-missing" data-category="landmark" data-book-stamp="met">
+                <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
               </article>
               <article class="trip-stamp trip-stamp-tall" data-category="landmark">
                 <img src="Assets/Stamps/TimesSq.png" alt="Times Square stamp" />
@@ -240,11 +240,11 @@
               <h3 class="gem-detail-title" data-gem-title></h3>
               <p class="gem-detail-meta"><span data-gem-walk></span></p>
               <div class="gem-detail-actions">
-                <button type="button" class="btn btn-ghost gem-detail-save" data-gem-save>
+                <button type="button" class="btn btn-ghost gem-detail-save" data-gem-save aria-pressed="false">
                   <svg class="gem-detail-save-icon" viewBox="0 0 24 24" aria-hidden="true">
                     <path d="M6 4h12a1 1 0 0 1 1 1v16l-7-4-7 4V5a1 1 0 0 1 1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
                   </svg>
-                  <span>Save for later</span>
+                  <span class="gem-detail-save-label">Save for later</span>
                 </button>
                 <button type="button" class="btn btn-primary" data-gem-go>Go →</button>
               </div>
