@@ -2,7 +2,8 @@
  * AR flow coordinator: one MindAR session, phase modules swapped without camera teardown.
  */
 
-import { SECOND_SPOT_GEM_ID } from './ar-config.js';
+import { HIDDEN_GEMS, SECOND_SPOT_GEM_ID } from './ar-config.js';
+import { buildDirectionsUrl } from '../saved-spots.js';
 import * as homeStampState from '../home-stamp-state.js';
 import * as mindarHost from './ar-mindar-host.js';
 import * as phaseLandmark from './ar-phase-landmark.js';
@@ -103,8 +104,14 @@ function bindGemUiOnce() {
         beginPhase4OutlineFlow();
         return;
       }
-      console.log('[hidden-gem] go:', phasePins.getCurrentGemId());
-      phasePins.showGemToast('Heading there… (placeholder)');
+      const gemId = phasePins.getCurrentGemId();
+      const gem = gemId ? HIDDEN_GEMS.find((g) => g.id === gemId) : null;
+      phasePins.closeGemCard();
+      if (gem) {
+        window.open(buildDirectionsUrl(gem), '_blank', 'noopener,noreferrer');
+      }
+      stopARSession();
+      navigateGo?.('home');
       return;
     }
     if (t.closest('[data-gem-save]')) {
