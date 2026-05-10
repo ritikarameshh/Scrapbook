@@ -408,10 +408,12 @@ p { margin: 0; }
 }
 
 /* ============ Home — trip stamps ============ */
-.screen-home {
-  background: #fff;
+.screen-home,
+.screen-spots {
+  background: var(--neutral-0);
 }
-.screen-home::before {
+.screen-home::before,
+.screen-spots::before {
   content: "";
   position: absolute;
   top: 0;
@@ -1793,13 +1795,31 @@ p { margin: 0; }
 }
 
 /* ============ Spots — saved hidden gems ============ */
-.screen-spots {
-  background: var(--neutral-0);
+.screen-spots > .spots-scroll,
+.screen-spots .spots-header,
+.screen-spots .spots-body {
+  position: relative;
+  z-index: 1;
+}
+/* One scroll region for Spots: title + list (tabbar stays fixed as flex sibling). */
+.screen-spots > .spots-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: calc(var(--tabbar-h) + 32px);
+}
+.screen-spots > .spots-scroll::-webkit-scrollbar { display: none; }
+.screen-spots > .spots-scroll > .spots-body {
+  flex: none;
+  overflow: visible;
+  /* Tabbar clearance lives on .spots-scroll; avoid double padding from .screen.has-tabs .screen-body */
+  padding-bottom: 24px;
 }
 .spots-header {
   flex: none;
   padding: calc(env(safe-area-inset-top) + 28px) 20px 8px;
-  background: var(--neutral-0);
 }
 .spots-title {
   margin: 0 0 4px;
