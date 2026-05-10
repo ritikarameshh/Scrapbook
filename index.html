@@ -53,35 +53,41 @@
             <button class="near-stamp-cta" type="button" data-go="ar-scan">Find it</button>
           </section>
 
-          <div class="home-stamp-grid" aria-label="New York stamp collection">
+          <nav class="home-stamp-tabs" role="tablist" aria-label="Filter stamps" data-stamp-tabs>
+            <button class="home-stamp-tab active" type="button" role="tab" aria-selected="true" data-stamp-filter="all">All</button>
+            <button class="home-stamp-tab" type="button" role="tab" aria-selected="false" data-stamp-filter="landmark">Landmarks</button>
+            <button class="home-stamp-tab" type="button" role="tab" aria-selected="false" data-stamp-filter="gem">Gems</button>
+          </nav>
+
+          <div class="home-stamp-grid" aria-label="New York stamp collection" data-stamp-filter="all">
             <div class="home-stamp-column">
-              <article class="trip-stamp trip-stamp-tall">
+              <article class="trip-stamp trip-stamp-tall" data-category="landmark">
                 <img src="Assets/Stamps/EmpireState.png" alt="Empire State Building stamp" />
               </article>
-              <article class="trip-stamp trip-stamp-missing">
+              <article class="trip-stamp trip-stamp-missing" data-category="landmark">
                 <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
               </article>
-              <article class="trip-stamp trip-stamp-wide">
+              <article class="trip-stamp trip-stamp-wide" data-category="gem">
                 <img src="Assets/Stamps/BryantPark.png" alt="Bryant Park stamp" />
               </article>
-              <article class="trip-stamp trip-stamp-tall-small">
+              <article class="trip-stamp trip-stamp-tall-small" data-category="landmark">
                 <img src="Assets/Stamps/WorldTradeCenter.png" alt="World Trade Center stamp" />
               </article>
-              <article class="trip-stamp trip-stamp-missing">
+              <article class="trip-stamp trip-stamp-missing" data-category="gem">
                 <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
               </article>
             </div>
             <div class="home-stamp-column">
-              <article class="trip-stamp trip-stamp-square">
+              <article class="trip-stamp trip-stamp-square" data-category="landmark">
                 <img src="Assets/Stamps/TheMet.png" alt="The Metropolitan Museum of Art stamp" />
               </article>
-              <article class="trip-stamp trip-stamp-tall">
+              <article class="trip-stamp trip-stamp-tall" data-category="landmark">
                 <img src="Assets/Stamps/TimesSq.png" alt="Times Square stamp" />
               </article>
-              <article class="trip-stamp trip-stamp-missing">
+              <article class="trip-stamp trip-stamp-missing" data-category="gem">
                 <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
               </article>
-              <article class="trip-stamp trip-stamp-missing">
+              <article class="trip-stamp trip-stamp-missing" data-category="landmark">
                 <img src="Assets/Stamps/MissingStamp.png" alt="Stamp yet to be collected" />
               </article>
             </div>

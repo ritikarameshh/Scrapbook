@@ -52,7 +52,7 @@ const TEMPLATE = `
     <div class="p2-loadingBody">
       <p class="p2-loadingPrompt">Find this stamp around you and grab it!</p>
       <div class="p2-loadingStamp">
-        <img src="./Assets/MetStamp.png" alt="The Metropolitan Museum of Art stamp" />
+        <img src="./Assets/Stamps/TheMet.png" alt="The Metropolitan Museum of Art stamp" />
       </div>
     </div>
     <div class="p2-loadingFooter">
@@ -106,7 +106,7 @@ export async function startPhase2Hunt({
   onError,
   stampUrl = './Assets/MetStamp.gltf',
   stampName = 'The Metropolitan Museum of Art',
-  stampImage = './Assets/MetStamp.png',
+  stampImage = './Assets/Stamps/TheMet.png',
   /** When set, reuse this element’s stream (e.g. MindAR video) instead of opening a new camera. */
   sharedVideoElement = null,
   funFacts = [

@@ -110,6 +110,22 @@ document.addEventListener('click', (e) => {
   if (opt) setMode(opt.dataset.mode);
 });
 
+// ============ Home — stamp filter tabs (All / Landmarks / Gems) ============
+document.addEventListener('click', (e) => {
+  const tab = e.target.closest('[data-stamp-tabs] .home-stamp-tab');
+  if (!tab) return;
+  const tabBar = tab.closest('[data-stamp-tabs]');
+  const filter = tab.dataset.stampFilter;
+  tabBar.querySelectorAll('.home-stamp-tab').forEach((t) => {
+    const active = t === tab;
+    t.classList.toggle('active', active);
+    t.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('.home-stamp-grid').forEach((grid) => {
+    grid.dataset.stampFilter = filter;
+  });
+});
+
 // ============ AR (delegates to ar/ar-orchestrator.js — single MindAR session) ============
 
 function hideARCameraError() {
